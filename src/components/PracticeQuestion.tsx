@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { Dispatch } from 'react';
-import { DEGREE_NAMES, letterPath, name } from '../lib/theory';
+import { DEGREE_NAMES, letterPath } from '../lib/theory';
 import type { PracticeAction, Session } from '../lib/practice';
-import type { Note, NotePair } from '../lib/types';
+import type { Note, NoteFormat, NotePair } from '../lib/types';
+import { NoteDisplay } from './NoteDisplay';
 import { AnswerChoices } from './AnswerChoices';
 import { Icon } from './Icon';
 
@@ -11,11 +12,13 @@ export function PracticeQuestion({
   dispatch,
   play,
   onExplore,
+  format,
 }: {
   session: Session;
   dispatch: Dispatch<PracticeAction>;
   play: (notes: Note[], simultaneous?: boolean) => Promise<void>;
   onExplore: (pair: NotePair) => void;
+  format: NoteFormat;
 }) {
   const q = s.queue[s.index],
     r = q.result,
@@ -27,16 +30,10 @@ export function PracticeQuestion({
   return (
     <>
       <p className="question-label">这两个音，构成什么音程？</p>
-      <div className="question-notes">
-        <b>
-          {name(q.a, false)}
-          <sub>{q.a.octave}</sub>
-        </b>
+      <div className={`question-notes ${format === 'piano' ? 'question-keyboards' : ''}`}>
+        <NoteDisplay note={q.a} format={format} showSpelling />
         <span>→</span>
-        <b>
-          {name(q.b, false)}
-          <sub>{q.b.octave}</sub>
-        </b>
+        <NoteDisplay note={q.b} format={format} showSpelling />
       </div>
       <div className="question-sound">
         <button onClick={() => void play([q.a, q.b])}>

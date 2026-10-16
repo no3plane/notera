@@ -2,19 +2,24 @@ import { useEffect } from 'react';
 import { Heading } from '../components/Heading';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { interval, name } from '../lib/theory';
+import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
-import type { Level, Note, NotePair, Page } from '../lib/types';
+import type { Level, Note, NoteFormat, NotePair, Page } from '../lib/types';
 
 export function PracticePage({
   controller,
   navigate,
   play,
   onExplore,
+  format,
+  onFormat,
 }: {
   controller: PracticeController;
   navigate: (page: Page) => void;
   play: (notes: Note[], simultaneous?: boolean) => Promise<void>;
   onExplore: (pair: NotePair) => void;
+  format: NoteFormat;
+  onFormat: (format: NoteFormat) => void;
 }) {
   const { state, dispatch, start, reset, restore } = controller,
     s = state.session,
@@ -84,6 +89,24 @@ export function PracticePage({
           <div className="progress-line">
             <i style={{ width: `${goal ? (s.index / goal) * 100 : 0}%` }} />
           </div>
+          <div className="notation-toolbar">
+            <span>题目显示</span>
+            <div className="segmented" role="group" aria-label="题目显示形式">
+              {NOTE_FORMATS.map((f) => (
+                <button
+                  key={f.value}
+                  className={format === f.value ? 'active' : ''}
+                  aria-pressed={format === f.value}
+                  onClick={() => onFormat(f.value)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="notation-guide">
+            1=C · 固定 Do · C4 为中音，点在下方低八度，点在上方高八度。
+          </p>
           {empty ? (
             <div className="session-end">
               <h2>还没有易错题</h2>
@@ -115,7 +138,13 @@ export function PracticePage({
               </button>
             </div>
           ) : (
-            <PracticeQuestion session={s} dispatch={dispatch} play={play} onExplore={onExplore} />
+            <PracticeQuestion
+              session={s}
+              dispatch={dispatch}
+              play={play}
+              onExplore={onExplore}
+              format={format}
+            />
           )}
         </section>
         <aside className="practice-side">

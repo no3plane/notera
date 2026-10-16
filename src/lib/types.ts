@@ -4,7 +4,8 @@ export interface Note {
   acc: number;
   octave: number;
 }
-export type Page = 'explore' | 'practice' | 'learn';
+export type Page = 'explore' | 'practice' | 'conversion' | 'learn';
+export type NoteFormat = 'name' | 'numbered' | 'solfege' | 'piano';
 export type Level = 'basic' | 'mixed' | 'review';
 export type InstrumentView = 'guitar' | 'piano' | 'steps';
 export type NoteKey = 'a' | 'b';

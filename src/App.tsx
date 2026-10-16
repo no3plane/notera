@@ -2,18 +2,29 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ExplorePage } from './pages/ExplorePage';
 import { PracticePage } from './pages/PracticePage';
 import { LearnPage } from './pages/LearnPage';
+import { ConversionPage } from './pages/ConversionPage';
+import { useConversion } from './hooks/useConversion';
+import { FORMAT_KEY, readNoteFormat } from './lib/notation';
 import { useAudio } from './hooks/useAudio';
 import { usePractice } from './hooks/usePractice';
 import { PRESETS } from './lib/presets';
 import type { PresetName } from './lib/presets';
-import type { Exploration, NotePair, Page } from './lib/types';
+import type { Exploration, NoteFormat, NotePair, Page } from './lib/types';
 
 function pageFromHash(): Page {
   const hash = location.hash.slice(1);
-  return hash === 'practice' || hash === 'learn' ? hash : 'explore';
+  return hash === 'practice' || hash === 'learn' || hash === 'conversion' ? hash : 'explore';
 }
 export default function App() {
   const [page, setPage] = useState<Page>(pageFromHash);
+  const [format, setFormat] = useState<NoteFormat>(readNoteFormat);
+  useEffect(() => {
+    try {
+      localStorage.setItem(FORMAT_KEY, format);
+    } catch {
+      /* The current selection still works without storage. */
+    }
+  }, [format]);
   const [exploration, setExploration] = useState<Exploration>({
     a: { letter: 'C', acc: 0, octave: 3 },
     b: { letter: 'G', acc: 0, octave: 3 },
@@ -36,6 +47,7 @@ export default function App() {
   );
   const play = useAudio(notify);
   const practice = usePractice(notify, page === 'practice');
+  const conversion = useConversion(page === 'conversion');
   const navigate = useCallback((next: Page) => {
     setPage(next);
     location.hash = next;
@@ -58,6 +70,7 @@ export default function App() {
   const pages: { page: Page; label: string }[] = [
     { page: 'explore', label: '探索音程' },
     { page: 'practice', label: '反应练习' },
+    { page: 'conversion', label: '音符对应' },
     { page: 'learn', label: '学习笔记' },
   ];
   return (
@@ -111,7 +124,11 @@ export default function App() {
               navigate={navigate}
               play={play}
               onExplore={onExplore}
+              format={format}
+              onFormat={setFormat}
             />
+          ) : page === 'conversion' ? (
+            <ConversionPage controller={conversion} play={play} navigate={navigate} />
           ) : (
             <LearnPage navigate={navigate} preset={preset} onExplore={onExplore} />
           )}

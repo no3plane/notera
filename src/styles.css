@@ -943,7 +943,7 @@ footer {
   font-size: 19px;
   color: #a7af9c;
 }
-.question-notes span {
+.question-notes > span {
   font-size: 24px;
   color: #b5bfaa;
 }
@@ -1760,4 +1760,362 @@ footer {
 .answer-degrees button:hover:not(:disabled),
 .answer-qualities button:hover:not(:disabled) {
   transform: none;
+}
+
+/* Shared note notation and the conversion workspace. */
+.notation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #718362;
+  font-size: 11px;
+}
+.notation-guide {
+  font-size: 10px;
+  color: #78856e;
+  line-height: 1.9;
+  margin: 10px 0 0;
+}
+.note-symbol {
+  display: inline-block;
+  position: relative;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.note-symbol sub {
+  font-size: 0.36em;
+  color: #7d8b70;
+}
+.note-symbol .octave-dots {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.3em;
+  line-height: 0.8;
+  letter-spacing: 0.04em;
+}
+.octave-above {
+  top: -0.5em;
+}
+.octave-below {
+  bottom: -0.35em;
+}
+.note-keyboard {
+  width: 100%;
+  max-width: 310px;
+  margin: auto;
+}
+.note-keyboard svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.note-key rect {
+  fill: #fafbf7;
+  stroke: #cfd8c6;
+  stroke-width: 1;
+  transition: fill 0.16s;
+}
+.note-key.is-black rect {
+  fill: #2f4036;
+  stroke: #2f4036;
+}
+.note-key.is-selected rect,
+.note-key.is-correct rect {
+  fill: var(--green);
+  stroke: var(--green-dark);
+}
+.note-key.is-wrong rect {
+  fill: #c58c63;
+  stroke: #a06b42;
+}
+.note-key circle {
+  fill: #e1ebbc;
+  pointer-events: none;
+}
+.note-key text {
+  fill: #78856e;
+  font-size: 11px;
+}
+.note-keyboard-input .note-key[aria-disabled='false'] {
+  cursor: pointer;
+}
+.note-keyboard-input .note-key[aria-disabled='false']:hover rect {
+  fill: #cedcb6;
+}
+.note-keyboard-input .note-key:focus-visible {
+  outline: none;
+}
+.note-keyboard-input .note-key:focus-visible rect {
+  stroke: #90ae61;
+  stroke-width: 4;
+}
+.keyboard-note {
+  flex: 1;
+  min-width: 0;
+}
+.spelling-note {
+  display: block;
+  font-size: 10px;
+  color: #78856e;
+  text-align: center;
+  margin-top: 6px;
+}
+.question-keyboards {
+  gap: 16px;
+  align-items: center;
+}
+.conversion-settings {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+}
+.conversion-settings label {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: #718362;
+}
+.conversion-settings select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fafbf7;
+  color: var(--ink);
+  font-size: 12px;
+}
+.conversion-settings > span {
+  align-self: flex-end;
+  padding-bottom: 10px;
+  color: #93a087;
+}
+.conversion-prompt {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: 5px 0 13px;
+  animation: enter 0.2s ease both;
+}
+.conversion-prompt .note-symbol {
+  font-size: 60px;
+  color: var(--ink);
+}
+.conversion-prompt .keyboard-note {
+  width: min(100%, 280px);
+}
+.conversion-board .question-label {
+  margin: 20px 0 10px;
+}
+.conversion-board .question-sound {
+  margin-bottom: 16px;
+}
+.conversion-answer {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.answer-caption {
+  margin: 0 0 14px;
+  color: #78856e;
+  font-size: 11px;
+}
+.conversion-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.conversion-choices button {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbf7;
+  min-height: 88px;
+  padding: 24px 8px 18px;
+}
+.conversion-choices button:hover:not(:disabled) {
+  background: var(--soft);
+  border-color: #a1bd73;
+  transform: none;
+}
+.conversion-choices button > small {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  font-size: 9px;
+  color: #7b8c6d;
+}
+.conversion-choices .note-symbol {
+  font-size: 28px;
+}
+.conversion-choices .choice-correct {
+  border-color: var(--green);
+  background: #edf4e4;
+  color: var(--green);
+}
+.conversion-choices .choice-wrong {
+  border-color: #bd875f;
+  background: #faf0e5;
+  color: #9e6c3d;
+}
+.choice-mark {
+  position: absolute;
+  bottom: 5px;
+  right: 9px;
+  font-size: 11px;
+}
+.note-equivalents {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.5fr;
+  gap: 12px;
+  align-items: center;
+  padding-top: 13px;
+}
+.note-equivalents > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.note-equivalents small {
+  font-size: 10px;
+  color: #718362;
+}
+.note-equivalents .note-symbol {
+  font-size: 22px;
+}
+.reference-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid #dbe3ce;
+  border-bottom: 1px solid #dbe3ce;
+  text-align: left;
+  font-size: 12px;
+  color: var(--green);
+}
+.note-reference {
+  margin-top: 8px;
+}
+.note-reference .note-symbol {
+  font-size: 13px;
+}
+.conversion-review {
+  text-align: left;
+  max-width: 420px;
+  margin: 24px auto 0;
+}
+.conversion-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: #78856e;
+}
+.conversion-review-row > .note-symbol {
+  font-size: 20px;
+  color: var(--green);
+}
+.conversion-review-row > span:last-child {
+  color: var(--orange);
+}
+.conversion-board .submit-row {
+  gap: 16px;
+}
+.conversion-board .submit-row .primary {
+  flex-shrink: 0;
+}
+.practice-side .stat small {
+  font-size: 12px;
+}
+@media (max-width: 1050px) {
+  nav {
+    gap: 22px;
+  }
+}
+@media (max-width: 600px) {
+  .topbar {
+    height: auto;
+    min-height: 94px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 12px;
+  }
+  .topbar nav {
+    width: 100%;
+    height: 38px;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .topbar .nav-item {
+    font-size: 12px;
+    padding: 0 8px 9px;
+  }
+  .notation-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .notation-toolbar .segmented {
+    width: 100%;
+  }
+  .notation-toolbar .segmented button {
+    flex: 1;
+    justify-content: center;
+    font-size: 11px;
+    padding: 9px 6px;
+    white-space: nowrap;
+  }
+  .notation-guide {
+    font-size: 10px;
+  }
+  .question-keyboards {
+    gap: 8px;
+  }
+  .question-keyboards > span {
+    font-size: 18px;
+  }
+  .question-keyboards .spelling-note {
+    font-size: 9px;
+  }
+  .question-notes .note-symbol-solfege {
+    font-size: 38px;
+  }
+  .conversion-settings {
+    gap: 12px;
+  }
+  .conversion-choices {
+    gap: 6px;
+  }
+  .conversion-choices button {
+    min-height: 80px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .conversion-choices .note-symbol {
+    font-size: 23px;
+  }
+  .note-equivalents {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+  }
+  .note-equivalents .note-keyboard {
+    max-width: 150px;
+  }
 }
