@@ -19,6 +19,20 @@ pnpm dev
 
 项目锁定 `packageManager: pnpm@10.23.0`，提交 `pnpm-lock.yaml`，请使用 pnpm 安装依赖。
 
+## 安卓安装与离线使用（PWA）
+
+1. 执行 `pnpm build`，将 `dist/` 内的全部文件部署到支持 **HTTPS** 的静态网站；保留 `sw.js`、manifest 和 icons，建议 `sw.js` 使用 `Cache-Control: no-cache`。
+2. 安卓手机用 Chrome 打开 HTTPS 网站，等待首次页面加载完成，在浏览器菜单中选择「添加到主屏幕」→「安装」（名称可能因浏览器版本而异）。
+3. 首次打开时保持联网，等待离线资源缓存完成；然后开启飞行模式，从桌面图标重新打开，确认可以练习和播放声音。以后使用无需电脑在线。
+
+离线缓存仅在生产构建启用，`pnpm dev` 不启用。`pnpm preview` 可用于电脑 localhost 上的验证；手机访问 `http://电脑IP:4173` 不具备安装和离线缓存所需的安全环境，必须改用 HTTPS。不要直接用文件管理器打开 `dist/index.html`。
+
+更新网站后，联网打开应用以下载新版缓存，再关闭该网站的所有标签页和应用窗口，重新打开即可使用新版；不会在练习过程中强制刷新。练习记录仍保存在当前网站的本地存储，换域名、清除网站数据或卸载时可能丢失；原局域网地址的记录不会自动转移到新域名。
+
+没有 HTTPS 网站时，也可用安卓 USB 调试进行本地安装验证：电脑安装 Android Platform Tools，连接手机并授权 USB 调试，运行 `pnpm preview`，再在另一个终端运行 `adb reverse tcp:4173 tcp:4173`。手机 Chrome 打开 `http://localhost:4173` 并安装；确认缓存后即可断开 USB。这个地址适合自用验证，后续更新仍需重新连接电脑。
+
+安装环境依据：[MDN：Making PWAs installable](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable)。
+
 ## 功能
 
 - **探索音程**：在标准调弦吉他 0–12 品指板、钢琴键盘和半音阶梯之间切换；点击选音，也可指定音名、升降号与八度。
