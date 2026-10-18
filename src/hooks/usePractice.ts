@@ -4,7 +4,7 @@ import { createSession, practiceReducer } from '../lib/practice';
 import type { PracticeState } from '../lib/practice';
 import type { Level } from '../lib/types';
 
-export function usePractice(notify: (message: string) => void, active: boolean) {
+export function usePractice(notify: (message: string) => void) {
   const [state, dispatch] = useReducer(practiceReducer, undefined, (): PracticeState => {
     const progress = readProgress() ?? emptyProgress();
     return {
@@ -22,11 +22,11 @@ export function usePractice(notify: (message: string) => void, active: boolean) 
   }, [state.backup, notify]);
   useEffect(() => {
     const updateTimer = () =>
-      dispatch({ type: active && !document.hidden ? 'resume' : 'pause', now: performance.now() });
+      dispatch({ type: !document.hidden ? 'resume' : 'pause', now: performance.now() });
     updateTimer();
     document.addEventListener('visibilitychange', updateTimer);
     return () => document.removeEventListener('visibilitychange', updateTimer);
-  }, [active]);
+  }, []);
   const start = useCallback(
     (level: Level = state.level) =>
       dispatch({ type: 'session', level, session: createSession(level, state.progress.mistakes) }),

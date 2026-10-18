@@ -12,7 +12,7 @@ export function useAudio(notify: (message: string) => void) {
     [],
   );
   return useCallback(
-    async (notes: Note[], simultaneous = false) => {
+    async (notes: Note[]) => {
       try {
         const Audio =
           window.AudioContext ||
@@ -26,7 +26,7 @@ export function useAudio(notify: (message: string) => void) {
         await audio.resume();
         const start = audio.currentTime + 0.04;
         notes.forEach((note, i) => {
-          const time = start + (simultaneous ? 0 : i * 0.55);
+          const time = start + i * 0.55;
           const frequency = 440 * 2 ** ((midi(note) - 69) / 12);
           [1, 2, 3, 4].forEach((harmonic, j) => {
             const oscillator = audio.createOscillator();

@@ -24,7 +24,7 @@ function displayedNotes(): [Note, Note] {
   });
   return [notes[0], notes[1]];
 }
-describe('React migration', () => {
+describe('reaction practice', () => {
   it('preserves DOM nodes, focus and the page wrapper while selecting answers', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -46,7 +46,7 @@ describe('React migration', () => {
     expect(document.querySelector('.page-enter')).toBe(wrapper);
     expect(screen.getByRole('button', { name: '五度' })).toBe(degree);
   });
-  it('supports keyboard selection and preserves the current question across navigation', async () => {
+  it('supports keyboard selection and preserves the current question when returning home', async () => {
     const user = userEvent.setup();
     render(<App />);
     const question = document.querySelector('.question-notes')!.textContent;
@@ -54,8 +54,7 @@ describe('React migration', () => {
     expect(screen.getByRole('button', { name: '四度' }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.keyDown(document.body, { key: ' ', code: 'Space' });
     expect(play).toHaveBeenCalledWith(displayedNotes());
-    await user.click(screen.getByRole('button', { name: '学习笔记' }));
-    await user.click(screen.getByRole('button', { name: '反应练习' }));
+    await user.click(screen.getByRole('link', { name: 'Notera 首页' }));
     expect(document.querySelector('.question-notes')!.textContent).toBe(question);
     expect(screen.getByRole('button', { name: '四度' }).getAttribute('aria-pressed')).toBe('true');
   });
@@ -87,17 +86,12 @@ describe('React migration', () => {
     );
     expect(screen.getByText('第 2 / 10 题')).toBeTruthy();
   });
-  it('calculates altered notes and switches enharmonic spellings without replacing selectors', async () => {
-    const user = userEvent.setup();
+  it.each(['', '#explore', '#conversion', '#learn'])('opens practice directly from %s', (hash) => {
+    location.hash = hash;
     render(<App />);
-    await user.click(screen.getByRole('button', { name: '探索音程' }));
-    const picker = screen.getByLabelText('目标音升降号');
-    await user.selectOptions(picker, '1');
-    expect(screen.getByRole('heading', { name: '增五度' })).toBeTruthy();
-    expect(screen.getByLabelText('目标音升降号')).toBe(picker);
-    await user.click(screen.getByRole('button', { name: /02 \/ 同音，异名/ }));
-    expect(screen.getByRole('heading', { name: '增四度' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: /等音换写/ }));
-    expect(screen.getByRole('heading', { name: '减五度' })).toBeTruthy();
+    expect(location.hash).toBe('#practice');
+    expect(screen.getByRole('region', { name: '音程反应练习' })).toBeTruthy();
+    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.queryByText(/探索音程|音符对应|学习笔记|在指板上看看|去笔记里看看/)).toBeNull();
   });
 });

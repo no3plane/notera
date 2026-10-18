@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Notera · 音程练习室",
   "short_name": "Notera",
-  "description": "看见音程、聆听距离，离线练习吉他音程与音符对应。",
+  "description": "聆听音程、练习判断，支持离线反应练习与错题复习。",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",

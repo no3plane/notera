@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Dispatch } from 'react';
 import { DEGREE_NAMES, letterPath } from '../lib/theory';
 import type { PracticeAction, Session } from '../lib/practice';
-import type { Note, NoteFormat, NotePair } from '../lib/types';
+import type { Note, NoteFormat } from '../lib/types';
 import { NoteDisplay } from './NoteDisplay';
 import { AnswerChoices } from './AnswerChoices';
 import { Icon } from './Icon';
@@ -11,13 +11,11 @@ export function PracticeQuestion({
   session: s,
   dispatch,
   play,
-  onExplore,
   format,
 }: {
   session: Session;
   dispatch: Dispatch<PracticeAction>;
-  play: (notes: Note[], simultaneous?: boolean) => Promise<void>;
-  onExplore: (pair: NotePair) => void;
+  play: (notes: Note[]) => Promise<void>;
   format: NoteFormat;
 }) {
   const q = s.queue[s.index],
@@ -74,9 +72,6 @@ export function PracticeQuestion({
       <div className="submit-row">
         {s.revealed ? (
           <>
-            <button className="plain-button" onClick={() => onExplore(q)}>
-              在指板上看看 ↗
-            </button>
             <button
               className="primary"
               data-action="next"

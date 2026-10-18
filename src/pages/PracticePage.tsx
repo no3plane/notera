@@ -4,20 +4,16 @@ import { PracticeQuestion } from '../components/PracticeQuestion';
 import { interval, name } from '../lib/theory';
 import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
-import type { Level, Note, NoteFormat, NotePair, Page } from '../lib/types';
+import type { Level, Note, NoteFormat } from '../lib/types';
 
 export function PracticePage({
   controller,
-  navigate,
   play,
-  onExplore,
   format,
   onFormat,
 }: {
   controller: PracticeController;
-  navigate: (page: Page) => void;
-  play: (notes: Note[], simultaneous?: boolean) => Promise<void>;
-  onExplore: (pair: NotePair) => void;
+  play: (notes: Note[]) => Promise<void>;
   format: NoteFormat;
   onFormat: (format: NoteFormat) => void;
 }) {
@@ -138,13 +134,7 @@ export function PracticePage({
               </button>
             </div>
           ) : (
-            <PracticeQuestion
-              session={s}
-              dispatch={dispatch}
-              play={play}
-              onExplore={onExplore}
-              format={format}
-            />
+            <PracticeQuestion session={s} dispatch={dispatch} play={play} format={format} />
           )}
         </section>
         <aside className="practice-side">
@@ -179,9 +169,6 @@ export function PracticePage({
             <p className="eyebrow">A LITTLE REMINDER</p>
             <h3>不要跳过“数音名”这一步。</h3>
             <p>C 到 F♯ 和 C 到 G♭ 都相距 6 个半音，但前者是四度，后者是五度。拼写决定度数。</p>
-            <button className="plain-button" onClick={() => navigate('learn')}>
-              去笔记里看看 ↗
-            </button>
           </div>
           <div className="practice-tip">
             <h3>最近的练习</h3>

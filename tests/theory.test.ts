@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import type { Note } from '../src/lib/types';
 import assert from 'node:assert/strict';
-import { interval, makeQuestion, midi, fromMidi, letterPath } from '../src/lib/theory';
+import { interval, makeQuestion, letterPath } from '../src/lib/theory';
 const n = (letter: Note['letter'], acc = 0, octave = 3): Note => ({ letter, acc, octave });
 test('all baseline intervals from unison through octave', () => {
   const letters: Note['letter'][] = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'];
@@ -33,9 +33,7 @@ test('descending, octave crossing, altered starting notes, compound intervals', 
   assert.equal(interval(n('C'), n('D', 0, 4)).title, '大9度');
   assert.equal(interval(n('C'), n('D', -1, 4)).semitones, 13);
 });
-test('guitar pitches round trip and generated questions remain in supported scope', () => {
-  for (let m = 40; m <= 76; m++)
-    for (const flat of [false, true]) assert.equal(midi(fromMidi(m, flat)), m);
+test('generated questions remain in supported scope', () => {
   for (const level of ['basic', 'mixed'] as const)
     for (let i = 0; i < 2000; i++) {
       const q = makeQuestion(level),

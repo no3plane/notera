@@ -18,18 +18,6 @@ export function name(n: Note, octave = true) {
     (octave ? n.octave : '')
   );
 }
-export function fromMidi(m: number, flat = false): Note {
-  const spelling = flat
-    ? ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B']
-    : ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
-  const pc = ((m % 12) + 12) % 12,
-    s = spelling[pc];
-  return {
-    letter: s[0] as Note['letter'],
-    acc: s.length > 1 ? (flat ? -1 : 1) : 0,
-    octave: Math.floor(m / 12) - 1,
-  };
-}
 export function interval(a: Note, b: Note) {
   let low = a,
     high = b;
