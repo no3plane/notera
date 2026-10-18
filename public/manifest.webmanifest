@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Notera · 音程练习室",
+  "name": "Notera · 乐理练习室",
   "short_name": "Notera",
-  "description": "聆听音程、练习判断，支持离线反应练习与错题复习。",
+  "description": "音程推算、指板定位、和弦对应，支持离线练习与错题复习。",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",

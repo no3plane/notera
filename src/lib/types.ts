@@ -20,4 +20,14 @@ export interface Progress {
   time: number;
   history: HistoryEntry[];
   mistakes: NotePair[];
+  fretboardMemory?: import('./fretboardMemory').MemoryProgress;
+  fretboard?: import('./fretboard').FretboardProgress;
+  exerciseMistakes?: string[];
+  exerciseHistory?: { id: string; correct: boolean }[];
+  byKind?: Partial<
+    Record<
+      import('./exercises').StoredExerciseKind,
+      { total: number; correct: number; time: number }
+    >
+  >;
 }

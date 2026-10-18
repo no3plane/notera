@@ -24,7 +24,7 @@ function displayedNotes(): [Note, Note] {
   });
   return [notes[0], notes[1]];
 }
-describe('reaction practice', () => {
+describe('theory practice', () => {
   it('preserves DOM nodes, focus and the page wrapper while selecting answers', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -90,7 +90,7 @@ describe('reaction practice', () => {
     location.hash = hash;
     render(<App />);
     expect(location.hash).toBe('#practice');
-    expect(screen.getByRole('region', { name: '音程反应练习' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: '判断音程练习' })).toBeTruthy();
     expect(screen.queryByRole('navigation')).toBeNull();
     expect(screen.queryByText(/探索音程|音符对应|学习笔记|在指板上看看|去笔记里看看/)).toBeNull();
   });

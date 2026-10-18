@@ -1,5 +1,20 @@
 import { LETTERS, name } from './theory';
 import type { HistoryEntry, Note, NotePair, Progress } from './types';
+import { findExercise, KINDS } from './exercises';
+import type { StoredExerciseKind } from './exercises';
+import { readMemoryProgress } from './fretboardMemory';
+import { readFretProgress } from './fretboard';
+
+// Retain saved results for the retired exercise without making it playable.
+const STORED_KINDS: StoredExerciseKind[] = [...KINDS, 'strings'];
+function isSavedExerciseId(id: unknown): id is string {
+  if (typeof id !== 'string') return false;
+  return (
+    Boolean(findExercise(id)) ||
+    /^strings:([1-6]):([1-6]):(actual|upward)$/.test(id) ||
+    /^fret:[56]:[1-6]:(-1|0|1|2)$/.test(id)
+  );
+}
 
 export const PROGRESS_KEY = 'notera-progress-v1';
 export const BACKUP_KEY = 'notera-progress-backup';
@@ -57,6 +72,41 @@ export function readProgress(key = PROGRESS_KEY): Progress | null {
         )
         .slice(0, 30),
       mistakes: data.mistakes.filter(isPair),
+      ...(data.fretboard ? { fretboard: readFretProgress(data.fretboard) } : {}),
+      ...(data.fretboardMemory
+        ? { fretboardMemory: readMemoryProgress(data.fretboardMemory) }
+        : {}),
+      ...(Array.isArray(data.exerciseMistakes)
+        ? {
+            exerciseMistakes: [...new Set(data.exerciseMistakes.filter(isSavedExerciseId))],
+          }
+        : {}),
+      ...(Array.isArray(data.exerciseHistory)
+        ? {
+            exerciseHistory: data.exerciseHistory
+              .filter((h) => h && isSavedExerciseId(h.id) && typeof h.correct === 'boolean')
+              .slice(0, 30),
+          }
+        : {}),
+      ...(data.byKind && typeof data.byKind === 'object'
+        ? {
+            byKind: Object.fromEntries(
+              STORED_KINDS.flatMap((kind) => {
+                const stats = data.byKind?.[kind];
+                return stats &&
+                  Number.isInteger(stats.total) &&
+                  stats.total >= 0 &&
+                  Number.isInteger(stats.correct) &&
+                  stats.correct >= 0 &&
+                  stats.correct <= stats.total &&
+                  Number.isFinite(stats.time) &&
+                  stats.time >= 0
+                  ? [[kind, stats]]
+                  : [];
+              }),
+            ),
+          }
+        : {}),
     };
   } catch {
     return null;

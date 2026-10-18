@@ -3,12 +3,14 @@ import { BACKUP_KEY, emptyProgress, readProgress, writeProgress } from '../lib/p
 import { createSession, practiceReducer } from '../lib/practice';
 import type { PracticeState } from '../lib/practice';
 import type { Level } from '../lib/types';
+import type { Mode } from '../lib/exercises';
 
 export function usePractice(notify: (message: string) => void) {
   const [state, dispatch] = useReducer(practiceReducer, undefined, (): PracticeState => {
     const progress = readProgress() ?? emptyProgress();
     return {
       level: 'basic',
+      mode: 'interval',
       progress,
       backup: readProgress(BACKUP_KEY),
       session: createSession('basic', progress.mistakes),
@@ -28,19 +30,42 @@ export function usePractice(notify: (message: string) => void) {
     return () => document.removeEventListener('visibilitychange', updateTimer);
   }, []);
   const start = useCallback(
-    (level: Level = state.level) =>
-      dispatch({ type: 'session', level, session: createSession(level, state.progress.mistakes) }),
-    [state.level, state.progress.mistakes],
+    (level: Level = state.level, mode: Mode = state.mode ?? 'interval') =>
+      dispatch({
+        type: 'session',
+        level,
+        mode,
+        session: createSession(
+          level,
+          state.progress.mistakes,
+          performance.now(),
+          mode,
+          state.progress.exerciseMistakes,
+        ),
+      }),
+    [state.level, state.mode, state.progress.mistakes, state.progress.exerciseMistakes],
   );
   const reset = useCallback(() => {
-    dispatch({ type: 'reset', session: createSession(state.level, []) });
+    dispatch({
+      type: 'reset',
+      session: createSession(state.level, [], performance.now(), state.mode),
+    });
     notify('练习记录已重置，可随时恢复上次记录。');
-  }, [state.level, notify]);
+  }, [state.level, state.mode, notify]);
   const restore = useCallback(() => {
     if (!state.backup) return;
-    dispatch({ type: 'restore', session: createSession(state.level, state.backup.mistakes) });
+    dispatch({
+      type: 'restore',
+      session: createSession(
+        state.level,
+        state.backup.mistakes,
+        performance.now(),
+        state.mode,
+        state.backup.exerciseMistakes,
+      ),
+    });
     notify('已恢复上次记录。');
-  }, [state.backup, state.level, notify]);
+  }, [state.backup, state.level, state.mode, notify]);
   return { state, dispatch, start, reset, restore };
 }
 export type PracticeController = ReturnType<typeof usePractice>;

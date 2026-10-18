@@ -47,9 +47,9 @@ export default function App() {
           <strong>
             notera<span className="brand-dot">.</span>
           </strong>
-          <span className="brand-sub">音程练习室</span>
+          <span className="brand-sub">乐理练习室</span>
         </a>
-        <span className="practice-label">反应练习</span>
+        <span className="practice-label">乐理练习</span>
       </header>
       <main id="main">
         <div className="page-enter">
