@@ -11,6 +11,7 @@ async function openFretboard() {
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole('button', { name: /指板定位/ }));
+  await user.click(screen.getByRole('button', { name: '找音接力' }));
   return user;
 }
 function board() {

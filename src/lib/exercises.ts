@@ -27,7 +27,7 @@ export const MODE_LABELS = KIND_LABELS;
 export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   interval: '先数音名确定度数，再用半音距离判断性质。',
   'build-note': '给出起点、方向和完整音程，推算目标音名；注意升降号的拼写。',
-  fretboard: '认音：从参照 1 判断位置的级数。找音接力：从任意已知音出发，连续找到下一个目标音。',
+  fretboard: '从弦间音程、同音搬运到认音与找音接力，逐步连接指板位置。',
   'chord-degree': 'C 大调七个顺阶三和弦，交替练级数到和弦、和弦到级数。',
   'chord-tones': 'C 大调七个顺阶三和弦，交替练选出三个构成音、由三个音认和弦。',
 };

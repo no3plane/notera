@@ -22,6 +22,8 @@ export interface Progress {
   mistakes: NotePair[];
   fretboardMemory?: import('./fretboardMemory').MemoryProgress;
   fretboard?: import('./fretboard').FretboardProgress;
+  stringIntervals?: import('./stringIntervals').StringAttempt[];
+  sameNote?: import('./sameNote').SameNoteProgress;
   exerciseMistakes?: string[];
   exerciseHistory?: { id: string; correct: boolean }[];
   byKind?: Partial<

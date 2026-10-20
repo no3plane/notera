@@ -4,6 +4,8 @@ import { findExercise, KINDS } from './exercises';
 import type { StoredExerciseKind } from './exercises';
 import { readMemoryProgress } from './fretboardMemory';
 import { readFretProgress } from './fretboard';
+import { readStringProgress } from './stringIntervals';
+import { readSameNoteProgress } from './sameNote';
 
 // Retain saved results for the retired exercise without making it playable.
 const STORED_KINDS: StoredExerciseKind[] = [...KINDS, 'strings'];
@@ -72,6 +74,10 @@ export function readProgress(key = PROGRESS_KEY): Progress | null {
         )
         .slice(0, 30),
       mistakes: data.mistakes.filter(isPair),
+      ...(data.sameNote ? { sameNote: readSameNoteProgress(data.sameNote) } : {}),
+      ...(data.stringIntervals
+        ? { stringIntervals: readStringProgress(data.stringIntervals) }
+        : {}),
       ...(data.fretboard ? { fretboard: readFretProgress(data.fretboard) } : {}),
       ...(data.fretboardMemory
         ? { fretboardMemory: readMemoryProgress(data.fretboardMemory) }

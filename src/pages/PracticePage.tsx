@@ -17,17 +17,13 @@ import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
 import type { Level, Note, NoteFormat } from '../lib/types';
 
-export function PracticePage({
-  controller,
-  play,
-  format,
-  onFormat,
-}: {
+interface PracticePageProps {
   controller: PracticeController;
   play: (notes: Note[]) => Promise<void>;
   format: NoteFormat;
   onFormat: (format: NoteFormat) => void;
-}) {
+}
+export function PracticePage({ controller, play, format, onFormat }: PracticePageProps) {
   const { state, dispatch, start, reset, restore } = controller,
     s = state.session,
     progress = state.progress;
@@ -256,7 +252,11 @@ export function PracticePage({
               {KINDS.map((kind) => {
                 const part = kindStats(progress, kind);
                 const recalls =
-                  kind === 'fretboard' ? Object.values(progress.fretboard ?? {}).flat().length : 0;
+                  kind === 'fretboard'
+                    ? Object.values(progress.fretboard ?? {}).flat().length +
+                      Object.values(progress.sameNote ?? {}).flat().length +
+                      (progress.stringIntervals?.length ?? 0)
+                    : 0;
                 return (
                   <div key={kind} className={kind === mode ? 'current' : ''}>
                     <span>{KIND_LABELS[kind]}</span>
@@ -318,6 +318,7 @@ export function PracticePage({
               </button>
               {state.backup &&
                 (state.backup.total > 0 ||
+                  state.backup.stringIntervals?.length ||
                   state.backup.fretboardMemory ||
                   state.backup.fretboard) && (
                   <button className="plain-button" onClick={restore}>

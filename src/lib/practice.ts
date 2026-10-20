@@ -7,6 +7,10 @@ import { validMemoryAttempt } from './fretboardMemory';
 import type { MemoryAttempt, RootString } from './fretboardMemory';
 import { progressKey, validFretAttempt } from './fretboard';
 import type { FretAttempt } from './fretboard';
+import { validStringAttempt } from './stringIntervals';
+import type { StringAttempt } from './stringIntervals';
+import { validSameNoteAttempt } from './sameNote';
+import type { SameNoteAttempt, SameNoteStage } from './sameNote';
 
 export type Question = ReturnType<typeof makeQuestion> & { exercise?: Exercise };
 export function questionKey(q: Question) {
@@ -56,11 +60,14 @@ export interface PracticeState {
   session: Session;
 }
 export type PracticeAction =
+  | { type: 'same-note-result'; attempt: SameNoteAttempt }
+  | { type: 'same-note-reveal'; stage: SameNoteStage; id: string }
   | { type: 'degree'; value: number }
   | { type: 'quality'; value: Quality }
   | { type: 'choice'; value: string }
   | { type: 'memory-result'; root: RootString; attempt: MemoryAttempt }
   | { type: 'fret-result'; attempt: FretAttempt }
+  | { type: 'string-result'; attempt: StringAttempt }
   | { type: 'hint' }
   | { type: 'pause'; now: number }
   | { type: 'resume'; now: number }
@@ -131,6 +138,49 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
   const s = state.session;
   const answering = s.index < s.queue.length && !s.revealed;
   switch (action.type) {
+    case 'same-note-result': {
+      if (!validSameNoteAttempt(action.attempt)) return state;
+      const history = state.progress.sameNote?.[action.attempt.stage] ?? [];
+      if (history.some((a) => a.id === action.attempt.id)) return state;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          sameNote: {
+            ...state.progress.sameNote,
+            [action.attempt.stage]: [action.attempt, ...history].slice(0, 100),
+          },
+        },
+      };
+    }
+    case 'same-note-reveal': {
+      const history = state.progress.sameNote?.[action.stage];
+      if (!history?.some((a) => a.id === action.id && !a.correct && !a.shownAnswer)) return state;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          sameNote: {
+            ...state.progress.sameNote,
+            [action.stage]: history.map((a) =>
+              a.id === action.id ? { ...a, shownAnswer: true } : a,
+            ),
+          },
+        },
+      };
+    }
+    case 'string-result': {
+      if (!validStringAttempt(action.attempt)) return state;
+      const history = state.progress.stringIntervals ?? [];
+      if (history.some((a) => a.id === action.attempt.id)) return state;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          stringIntervals: [action.attempt, ...history].slice(0, 100),
+        },
+      };
+    }
     case 'fret-result': {
       if (!validFretAttempt(action.attempt)) return state;
       const fretboard = state.progress.fretboard ?? {};
@@ -228,6 +278,7 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
         ...state,
         session: { ...s, revealed: true, results: [...s.results, { correct, time, hint: s.hint }] },
         progress: {
+          ...state.progress,
           total: state.progress.total + 1,
           correct: state.progress.correct + Number(correct),
           time: state.progress.time + time,

@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { StringIntervalPractice } from './StringIntervalPractice';
+import { SameNotePractice } from './SameNotePractice';
 import type { PracticeController } from '../hooks/usePractice';
 import { Fretboard, positionLabel } from './Fretboard';
 import {
@@ -50,7 +53,48 @@ function session(mode: FretMode, level: FretLevel): FretSession {
   };
 }
 export function FretboardPractice({ controller }: { controller: PracticeController }) {
-  const [s, setSession] = useState<FretSession>(() => session('locate', 'natural'));
+  const [mode, setMode] = useState<'strings' | 'same-note' | FretMode>('strings');
+  const modeTabs = (
+    <div className="segmented" role="group" aria-label="指板题型">
+      {(['strings', 'same-note', 'recognize', 'locate'] as const).map((value) => (
+        <button
+          key={value}
+          className={mode === value ? 'active' : ''}
+          aria-pressed={mode === value}
+          onClick={() => setMode(value)}
+        >
+          {value === 'strings'
+            ? '弦间音程'
+            : value === 'same-note'
+              ? '同音搬运'
+              : FRET_MODE_LABELS[value]}
+        </button>
+      ))}
+    </div>
+  );
+  return mode === 'strings' ? (
+    <StringIntervalPractice controller={controller} modeTabs={modeTabs} />
+  ) : mode === 'same-note' ? (
+    <SameNotePractice controller={controller} modeTabs={modeTabs} />
+  ) : (
+    <FretPositionPractice
+      key={mode}
+      controller={controller}
+      initialMode={mode}
+      modeTabs={modeTabs}
+    />
+  );
+}
+function FretPositionPractice({
+  controller,
+  initialMode,
+  modeTabs,
+}: {
+  controller: PracticeController;
+  initialMode: FretMode;
+  modeTabs: ReactNode;
+}) {
+  const [s, setSession] = useState<FretSession>(() => session(initialMode, 'natural'));
   const locked = useRef<number | null>(null);
   const serial = useRef(0);
   const { mode, level, index, result, selected, resolved, showTarget } = s;
@@ -121,14 +165,16 @@ export function FretboardPractice({ controller }: { controller: PracticeControll
   useEffect(() => {
     const visibility = () => {
       const now = performance.now();
+      const paused = document.hidden;
       setSession((current) => {
         if (current.result || current.index >= current.questions.length) return current;
-        if (document.hidden && current.pausedAt === null) return { ...current, pausedAt: now };
-        if (!document.hidden && current.pausedAt !== null)
+        if (paused && current.pausedAt === null) return { ...current, pausedAt: now };
+        if (!paused && current.pausedAt !== null)
           return { ...current, started: current.started + now - current.pausedAt, pausedAt: null };
         return current;
       });
     };
+    visibility();
     document.addEventListener('visibilitychange', visibility);
     return () => document.removeEventListener('visibilitychange', visibility);
   }, []);
@@ -167,20 +213,7 @@ export function FretboardPractice({ controller }: { controller: PracticeControll
     <div className="practice-layout fret-layout">
       <section className="practice-board fret-board" aria-label="指板定位练习">
         <div className="fret-mode-bar">
-          <div className="segmented" role="group" aria-label="指板题型">
-            {(['recognize', 'locate'] as const).map((value) => (
-              <button
-                key={value}
-                className={mode === value ? 'active' : ''}
-                aria-pressed={mode === value}
-                onClick={() => {
-                  if (mode !== value) begin(value);
-                }}
-              >
-                {FRET_MODE_LABELS[value]}
-              </button>
-            ))}
-          </div>
+          {modeTabs}
           <select
             aria-label="指板难度"
             value={level}
@@ -399,6 +432,8 @@ export function FretboardPractice({ controller }: { controller: PracticeControll
           </button>
           {controller.state.backup &&
             (controller.state.backup.total > 0 ||
+              controller.state.backup.stringIntervals?.length ||
+              controller.state.backup.sameNote ||
               controller.state.backup.fretboardMemory ||
               controller.state.backup.fretboard) && (
               <button

@@ -2,25 +2,39 @@ import { DEGREE_NAMES } from '../lib/theory';
 import type { Quality } from '../lib/types';
 
 interface Props {
+  degreeOptions?: readonly { degree: number; label: string }[];
   degree: number | null;
   quality: Quality | null;
   disabled: boolean;
   onDegree: (value: number) => void;
   onQuality: (value: Quality) => void;
 }
-export function AnswerChoices({ degree, quality, disabled, onDegree, onQuality }: Props) {
+const DEFAULT_DEGREES = DEGREE_NAMES.map((label, i) => ({ degree: i + 1, label }));
+export function AnswerChoices({
+  degreeOptions = DEFAULT_DEGREES,
+  degree,
+  quality,
+  disabled,
+  onDegree,
+  onQuality,
+}: Props) {
   return (
     <>
       <div className="answer-title">01 / 它是几度？</div>
-      <div className="answer-degrees" role="group" aria-label="选择度数">
-        {DEGREE_NAMES.map((label, i) => (
+      <div
+        className="answer-degrees"
+        role="group"
+        aria-label="选择度数"
+        style={{ gridTemplateColumns: `repeat(${degreeOptions.length}, minmax(0, 1fr))` }}
+      >
+        {degreeOptions.map(({ degree: value, label }) => (
           <button
-            key={i + 1}
-            data-degree={i + 1}
-            className={degree === i + 1 ? 'selected' : ''}
-            aria-pressed={degree === i + 1}
+            key={value}
+            data-degree={value}
+            className={degree === value ? 'selected' : ''}
+            aria-pressed={degree === value}
             disabled={disabled}
-            onClick={() => onDegree(i + 1)}
+            onClick={() => onDegree(value)}
           >
             {label}度
           </button>

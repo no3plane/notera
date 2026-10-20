@@ -68,12 +68,12 @@ describe('new exercise flows', () => {
   it('keeps a whole round in one type and exposes no retired or mixed modes', async () => {
     const user = userEvent.setup();
     render(<App />);
-    expect(screen.queryByText(/混练|混合|弦间关系/)).toBeNull();
+    expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
     await user.click(screen.getByRole('button', { name: /指板定位/ }));
     expect(screen.getByRole('region', { name: '指板定位练习' })).toBeTruthy();
-    expect(screen.queryByText(/混练|混合|弦间关系/)).toBeNull();
+    expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
     await user.click(screen.getByRole('button', { name: /和弦对应/ }));
-    expect(screen.queryByText(/混练|混合|弦间关系/)).toBeNull();
+    expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
     await user.click(screen.getByRole('button', { name: /音程推算/ }));
     await user.click(screen.getByRole('button', { name: '推算音名' }));
     for (let i = 0; i < 10; i++) {
