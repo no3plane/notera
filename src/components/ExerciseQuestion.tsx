@@ -25,6 +25,7 @@ export function ExerciseQuestion({
     if (s.revealed) feedback.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [s.revealed]);
   const multi = exercise.answer.length > 1;
+  const keyboardChoices = exercise.kind === 'chord-tones-forward';
   const audible = s.revealed ? exercise.notes : exercise.listenBefore;
   return (
     <>
@@ -68,6 +69,8 @@ export function ExerciseQuestion({
               key={choice}
               className={`${chosen ? 'selected' : ''} ${answer ? 'answer-correct' : ''} ${s.revealed && chosen && !answer ? 'answer-wrong' : ''}`}
               aria-pressed={chosen}
+              aria-label={choice}
+              aria-keyshortcuts={keyboardChoices ? choice : undefined}
               disabled={s.revealed || (multi && selected.length === 3 && !chosen)}
               onClick={() => dispatch({ type: 'choice', value: choice })}
             >

@@ -8,7 +8,7 @@ import { readStringProgress } from './stringIntervals';
 import { readSameNoteProgress } from './sameNote';
 
 // Retain saved results for the retired exercise without making it playable.
-const STORED_KINDS: StoredExerciseKind[] = [...KINDS, 'strings'];
+const STORED_KINDS: StoredExerciseKind[] = [...KINDS, 'strings', 'chord-tones'];
 function isSavedExerciseId(id: unknown): id is string {
   if (typeof id !== 'string') return false;
   return (

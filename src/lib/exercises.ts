@@ -1,4 +1,5 @@
 import { interval, LETTERS, midi, name, NATURAL, position } from './theory';
+import { notation } from './notation';
 import type { Level, Note } from './types';
 
 export const KINDS = [
@@ -6,22 +7,24 @@ export const KINDS = [
   'build-note',
   'fretboard',
   'chord-degree',
-  'chord-tones',
+  'chord-tones-forward',
+  'chord-tones-reverse',
 ] as const;
 export type ExerciseKind = (typeof KINDS)[number];
 export type Mode = ExerciseKind;
-export type StoredExerciseKind = ExerciseKind | 'strings';
+export type StoredExerciseKind = ExerciseKind | 'strings' | 'chord-tones';
 export const KIND_LABELS: Record<ExerciseKind, string> = {
   interval: '判断音程',
   'build-note': '推算音名',
   fretboard: '指板定位',
   'chord-degree': '级数与和弦',
-  'chord-tones': '和弦构成音',
+  'chord-tones-forward': '和弦名 → 构成音',
+  'chord-tones-reverse': '构成音 → 和弦名',
 };
 export const TOPICS: { label: string; modes: Mode[] }[] = [
   { label: '音程推算', modes: ['interval', 'build-note'] },
   { label: '指板定位', modes: ['fretboard'] },
-  { label: '和弦对应', modes: ['chord-degree', 'chord-tones'] },
+  { label: '和弦对应', modes: ['chord-degree', 'chord-tones-forward', 'chord-tones-reverse'] },
 ];
 export const MODE_LABELS = KIND_LABELS;
 export const MODE_DESCRIPTIONS: Record<Mode, string> = {
@@ -29,7 +32,8 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'build-note': '给出起点、方向和完整音程，推算目标音名；注意升降号的拼写。',
   fretboard: '从弦间音程、同音搬运到认音与找音接力，逐步连接指板位置。',
   'chord-degree': 'C 大调七个顺阶三和弦，交替练级数到和弦、和弦到级数。',
-  'chord-tones': 'C 大调七个顺阶三和弦，交替练选出三个构成音、由三个音认和弦。',
+  'chord-tones-forward': '给出 C 大调顺阶三和弦名，用简谱选出三个构成音，选择顺序不限。',
+  'chord-tones-reverse': '给出顺序随机的三个简谱音，判断它们组成的 C 大调顺阶三和弦。',
 };
 export interface Exercise {
   id: string;
@@ -144,6 +148,14 @@ function chordNotes(tones: string[]): Note[] {
     return note;
   });
 }
+const toneOrders = [
+  [0, 1, 2],
+  [0, 2, 1],
+  [1, 0, 2],
+  [1, 2, 0],
+  [2, 0, 1],
+  [2, 1, 0],
+];
 let cached: Exercise[] | undefined;
 export function exerciseBank(): Exercise[] {
   if (cached) return cached;
@@ -182,6 +194,7 @@ export function exerciseBank(): Exercise[] {
     }
   CHORDS.forEach((chord, i) => {
     const notes = chordNotes(chord.tones);
+    const numberedTones = notes.map((note) => notation(note, 'numbered'));
     const explanation = `C 大调第 ${i + 1} 级是 ${chord.tones[0]}，隔一个音取一个音得到 ${chord.tones.join(' · ')}，组成 ${chord.symbol}（${chord.quality}）。`;
     for (const reverse of [false, true]) {
       bank.push({
@@ -198,22 +211,30 @@ export function exerciseBank(): Exercise[] {
         notes,
         listenBefore: reverse ? notes : undefined,
       });
-      bank.push({
-        id: `tones:${chord.symbol}:${reverse}`,
-        kind: 'chord-tones',
-        title: reverse
-          ? `${chord.tones.join(' · ')}，组成什么和弦？`
-          : `${chord.symbol} 的三个构成音是什么？`,
-        context: reverse ? 'C 大调 · 由构成音认和弦' : 'C 大调 · 选择三个音，顺序不限',
-        answer: reverse ? [chord.symbol] : chord.tones,
-        choices: reverse ? CHORDS.map((c) => c.symbol) : [...LETTERS],
-        hint: reverse
-          ? '第一个音是根音，看看根音到三音、五音各有几个半音。'
-          : `${chord.symbol} 是${chord.quality}。大三和弦为 1·3·5，小三和弦为 1·♭3·5，减三和弦为 1·♭3·♭5。`,
-        explanation: `${chord.symbol} = ${chord.tones.join(' · ')}；它是${chord.quality}，相对自身根音的构成为 ${chord.formula}。这里的和弦构成级数以和弦根音为 1。`,
-        notes,
-        listenBefore: reverse ? notes : undefined,
-      });
+      for (const [variant, order] of (reverse ? toneOrders : [toneOrders[0]]).entries()) {
+        const displayedTones = order.map((index) => numberedTones[index]);
+        const displayedNotes = order.map((index) => notes[index]);
+        bank.push({
+          id: `tones:${chord.symbol}:${reverse}${variant ? `:${displayedTones.join('')}` : ''}`,
+          kind: reverse ? 'chord-tones-reverse' : 'chord-tones-forward',
+          title: reverse
+            ? `${displayedTones.join(' · ')}，组成什么和弦？`
+            : `${chord.symbol} 的三个构成音是什么？`,
+          context: reverse
+            ? 'C 大调 · 1=C · 音的顺序随机，首音不一定是根音'
+            : 'C 大调 · 1=C · 选择三个简谱音，顺序不限',
+          answer: reverse ? [chord.symbol] : numberedTones,
+          choices: reverse
+            ? CHORDS.map((c) => c.symbol)
+            : LETTERS.map((_, index) => String(index + 1)),
+          hint: reverse
+            ? '1=C，先将三个音重新排列成隔一个音取一个音的形式，再判断根音及和弦性质；第一个音不一定是根音。'
+            : `1=C，C D E F G A B 对应 1 2 3 4 5 6 7。从 ${chord.symbol} 的根音开始，在音阶中隔一个音取一个音。`,
+          explanation: `${chord.symbol} = ${numberedTones.join(' · ')}（简谱 1=C）；它是${chord.quality}，相对自身根音的构成为 ${chord.formula}。这里的和弦构成公式以和弦根音为 1，简谱则以 C 为 1。`,
+          notes: displayedNotes,
+          listenBefore: reverse ? displayedNotes : undefined,
+        });
+      }
     }
   });
   cached = bank;
@@ -226,12 +247,12 @@ export function exercisesFor(kind: ExerciseKind, level: Level) {
   return exerciseBank().filter((e) => e.kind === kind && (level !== 'basic' || !e.advanced));
 }
 export function takeExercise(pool: Exercise[], turn: number): Exercise | undefined {
-  // Alternate directions within the selected exercise type.
+  // Only the remaining bidirectional types alternate within a round.
   const side = turn % 2 === 0;
   const index = pool.findIndex((e) =>
     e.kind === 'build-note'
       ? e.id.endsWith(side ? ':1' : ':-1')
-      : e.id.endsWith(side ? ':false' : ':true'),
+      : e.kind === 'chord-degree' && e.id.endsWith(side ? ':false' : ':true'),
   );
   return index < 0 ? pool.pop() : pool.splice(index, 1)[0];
 }

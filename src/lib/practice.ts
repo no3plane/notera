@@ -107,6 +107,14 @@ export function createSession(
     const seen = new Set<string>();
     const pool = shuffle(exercisesFor(mode, level));
     while (queue.length < 10) {
+      // There are seven forward prompts. Cover each before repeating to fill ten turns.
+      if (mode === 'chord-tones-forward' && !pool.length) {
+        pool.push(...shuffle(exercisesFor(mode, level)));
+        seen.clear();
+        if (pool.at(-1)?.id === queue.at(-1)?.exercise?.id) {
+          [pool[0], pool[pool.length - 1]] = [pool[pool.length - 1], pool[0]];
+        }
+      }
       const exercise = takeExercise(pool, queue.length);
       const q =
         mode === 'interval'

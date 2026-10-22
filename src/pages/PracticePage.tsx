@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Heading } from '../components/Heading';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
@@ -28,6 +28,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     s = state.session,
     progress = state.progress;
   const mode = state.mode ?? 'interval';
+  const board = useRef<HTMLElement>(null);
   const mistakeCount =
     (mode === 'interval' ? progress.mistakes.length : 0) +
     (progress.exerciseMistakes ?? []).filter((id) => {
@@ -40,7 +41,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const showNotation = current
     ? !current.exercise || current.exercise.kind === 'build-note'
     : mode === 'interval' || mode === 'build-note';
-  const hasDifficulty = !['chord-degree', 'chord-tones'].includes(mode);
+  const hasDifficulty = !mode.startsWith('chord-');
   const goal = s.queue.length,
     empty = !goal,
     done = s.index >= goal;
@@ -48,6 +49,8 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     const onKey = (e: KeyboardEvent) => {
       if (
         !(e.target instanceof Element) ||
+        e.repeat ||
+        e.isComposing ||
         e.target.closest('select,input,textarea,[contenteditable="true"]') ||
         e.metaKey ||
         e.ctrlKey ||
@@ -61,6 +64,17 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.preventDefault();
         dispatch({ type: 'degree', value: Number(e.key) });
       }
+      if (/^[1-7]$/.test(e.key) && !s.revealed && mode === 'chord-tones-forward') {
+        e.preventDefault();
+        const exercise = s.queue[s.index].exercise!;
+        const button = board.current?.querySelector<HTMLButtonElement>(
+          `.exercise-choices button[aria-keyshortcuts="${e.key}"]`,
+        );
+        if (button && !button.disabled) {
+          button.focus();
+          dispatch({ type: 'choice', value: exercise.choices[Number(e.key) - 1] });
+        }
+      }
       if (e.code === 'Space') {
         e.preventDefault();
         const q = s.queue[s.index];
@@ -71,7 +85,10 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           : [q.a, q.b];
         if (notes?.length) void play(notes);
       }
-      if (e.key === 'Enter' && !e.target.closest('button')) {
+      if (
+        e.key === 'Enter' &&
+        (!e.target.closest('button') || e.target.closest('.exercise-choices'))
+      ) {
         e.preventDefault();
         dispatch({ type: s.revealed ? 'next' : 'submit', now: performance.now() });
       }
@@ -137,7 +154,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         <FretboardPractice controller={controller} />
       ) : (
         <div className="practice-layout">
-          <section className="practice-board" aria-label={`${MODE_LABELS[mode]}练习`}>
+          <section ref={board} className="practice-board" aria-label={`${MODE_LABELS[mode]}练习`}>
             <div className="practice-bar">
               <span>
                 {empty ? '易错复习' : done ? '本轮练习已完成' : `第 ${s.index + 1} / ${goal} 题`}
@@ -327,8 +344,17 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                 )}
             </div>
             <div className="shortcut">
-              <kbd>1</kbd> — <kbd>8</kbd> 音程题选度数
-              <br />
+              {mode === 'chord-tones-forward' ? (
+                <>
+                  <kbd>1</kbd> — <kbd>7</kbd> 选择构成音，再按取消
+                  <br />
+                </>
+              ) : mode === 'interval' ? (
+                <>
+                  <kbd>1</kbd> — <kbd>8</kbd> 音程题选度数
+                  <br />
+                </>
+              ) : null}
               <kbd>Space</kbd> 聆听 · <kbd>Enter</kbd> 提交 / 下一题
             </div>
           </aside>
