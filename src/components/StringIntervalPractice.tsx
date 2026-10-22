@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import type { PracticeController } from '../hooks/usePractice';
 import type { Quality } from '../lib/types';
 import { StringIntervalFretboard } from './StringIntervalFretboard';
@@ -38,13 +37,7 @@ function readOpenNotesPreference() {
   }
 }
 
-export function StringIntervalPractice({
-  controller,
-  modeTabs,
-}: {
-  controller: PracticeController;
-  modeTabs: ReactNode;
-}) {
+export function StringIntervalPractice({ controller }: { controller: PracticeController }) {
   const [s, setSession] = useState(session);
   const [showOpenNotes, setShowOpenNotes] = useState(readOpenNotesPreference);
   useEffect(() => {
@@ -158,23 +151,22 @@ export function StringIntervalPractice({
   return (
     <div className="practice-layout fret-layout">
       <section className="practice-board fret-board" aria-label="指板定位练习">
-        <div className="fret-mode-bar string-practice-mode-bar">
-          {modeTabs}
-          <label className="string-note-toggle">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={showOpenNotes}
-              onChange={(event) => setShowOpenNotes(event.target.checked)}
-            />
-            <span>显示空弦音名</span>
-          </label>
-        </div>
-        <div className="fret-round-bar">
+        <div className="practice-bar fret-round-bar">
           <span>{done ? '本轮完成' : `第 ${s.index + 1} / 10 题`}</span>
-          <button className="plain-button" onClick={begin}>
-            换一轮
-          </button>
+          <div className="fret-round-actions">
+            <label className="string-note-toggle">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={showOpenNotes}
+                onChange={(event) => setShowOpenNotes(event.target.checked)}
+              />
+              <span>显示空弦音名</span>
+            </label>
+            <button className="plain-button" onClick={begin}>
+              换一轮
+            </button>
+          </div>
         </div>
         <div className="progress-line">
           <i style={{ width: `${done ? 100 : (s.index + Number(Boolean(result))) * 10}%` }} />

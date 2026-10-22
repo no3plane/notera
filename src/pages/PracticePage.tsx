@@ -3,6 +3,7 @@ import { Heading } from '../components/Heading';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
 import { FretboardPractice } from '../components/FretboardPractice';
+import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
 import {
   findExercise,
   KIND_LABELS,
@@ -124,32 +125,32 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </button>
         ))}
       </div>
-      <div className="mode-toolbar">
-        <div
-          className={topic.modes.length > 1 ? 'segmented' : 'single-mode'}
-          role="group"
-          aria-label="练习题型"
-        >
-          {topic.modes.length === 1 ? (
-            <span>{MODE_LABELS[mode]}</span>
-          ) : (
-            topic.modes.map((value) => (
-              <button
-                key={value}
-                className={mode === value ? 'active' : ''}
-                aria-pressed={mode === value}
-                onClick={() => {
-                  if (mode !== value) start('basic', value);
-                }}
-              >
-                {MODE_LABELS[value]}
-              </button>
-            ))
-          )}
-        </div>
-        <p>切换题型会开始新一轮，已答题目保留记录。</p>
-      </div>
-      <p className="mode-description">{MODE_DESCRIPTIONS[mode]}</p>
+      {mode !== 'fretboard' && (
+        <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
+          <div
+            className={topic.modes.length > 1 ? 'segmented' : 'single-mode'}
+            role="group"
+            aria-label="练习题型"
+          >
+            {topic.modes.length === 1 ? (
+              <span>{MODE_LABELS[mode]}</span>
+            ) : (
+              topic.modes.map((value) => (
+                <button
+                  key={value}
+                  className={mode === value ? 'active' : ''}
+                  aria-pressed={mode === value}
+                  onClick={() => {
+                    if (mode !== value) start('basic', value);
+                  }}
+                >
+                  {MODE_LABELS[value]}
+                </button>
+              ))
+            )}
+          </div>
+        </PracticeModeToolbar>
+      )}
       {mode === 'fretboard' ? (
         <FretboardPractice controller={controller} />
       ) : (

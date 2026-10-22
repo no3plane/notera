@@ -1042,9 +1042,6 @@ main {
 }
 
 /* Single-reference fretboard recognition and navigation. */
-.fret-mode-bar {
-  flex-wrap: wrap;
-}
 .same-note-surface {
   position: relative;
 }
@@ -1088,33 +1085,16 @@ main {
     left: 24px;
     width: calc(100% - 24px);
   }
-  .fret-mode-bar .segmented {
-    max-width: 100%;
-    flex-wrap: wrap;
-  }
 }
-.fret-board {
-  padding: 24px 28px;
-}
-.fret-mode-bar,
-.fret-round-bar {
+.fret-round-bar,
+.fret-round-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
-.fret-mode-bar select {
-  background: #fafbf7;
-  border: 1px solid var(--line);
-  padding: 8px;
-  border-radius: 5px;
-  font-size: 11px;
-  color: #627657;
-}
-.fret-round-bar {
-  font-size: 11px;
-  color: #74846b;
-  padding-top: 21px;
+.fret-round-actions {
+  margin-left: auto;
 }
 .fret-question-cue {
   position: sticky;
@@ -1228,9 +1208,6 @@ main {
 .string-fretboard {
   margin: 10px 0 0;
   color: var(--green);
-}
-.string-practice-mode-bar {
-  flex-wrap: wrap;
 }
 .string-note-toggle {
   display: inline-flex;
@@ -1430,22 +1407,13 @@ main {
     grid-template-columns: minmax(0, 1fr) 210px;
     gap: 20px;
   }
-  .fret-board {
-    padding: 20px;
-  }
 }
 @media (max-width: 450px) {
-  .fret-board {
-    padding: 18px 14px;
-  }
-  .fret-mode-bar {
-    gap: 8px;
-  }
-  .fret-mode-bar .segmented button {
+  .mode-toolbar .segmented button {
     font-size: 11px;
     padding: 9px 8px;
   }
-  .fret-mode-bar select {
+  .fret-round-bar select {
     font-size: 10px;
     padding: 8px 4px;
     max-width: 145px;

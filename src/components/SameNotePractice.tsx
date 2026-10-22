@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import type { PracticeController } from '../hooks/usePractice';
 import { samePoint } from '../lib/fretboard';
 import type { FretPoint } from '../lib/fretboard';
@@ -37,13 +36,7 @@ const timeLabel = (time: number) => `${(time / 1000).toFixed(2)} 秒`;
 const accuracy = (stats: ReturnType<typeof sameNoteStats>) =>
   stats.total ? `${Math.round((stats.independent / stats.total) * 100)}%` : '—';
 
-export function SameNotePractice({
-  controller,
-  modeTabs,
-}: {
-  controller: PracticeController;
-  modeTabs: ReactNode;
-}) {
+export function SameNotePractice({ controller }: { controller: PracticeController }) {
   const [s, setSession] = useState(() => session('basic', true));
   const first = useRef<SameNoteAttempt | null>(null);
   const serial = useRef(0);
@@ -161,29 +154,28 @@ export function SameNotePractice({
   return (
     <div className="practice-layout fret-layout">
       <section className="practice-board fret-board" aria-label="同音搬运练习">
-        <div className="fret-mode-bar same-note-mode-bar">
-          {modeTabs}
-          <select
-            aria-label="同音搬运阶段"
-            value={s.stage}
-            onChange={(e) => begin(e.target.value as SameNoteStage, true)}
-          >
-            {SAME_NOTE_STAGES.map((stage) => (
-              <option key={stage} value={stage}>
-                {SAME_NOTE_LABELS[stage]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="fret-round-bar">
+        <div className="practice-bar fret-round-bar">
           <span>
             {s.demo ? '先看一题示范 · 不计分' : done ? '本轮完成' : `第 ${s.index + 1} / 10 题`}
           </span>
-          {!s.demo && (
-            <button className="plain-button" onClick={() => begin()}>
-              换一轮
-            </button>
-          )}
+          <div className="fret-round-actions">
+            <select
+              aria-label="同音搬运阶段"
+              value={s.stage}
+              onChange={(e) => begin(e.target.value as SameNoteStage, true)}
+            >
+              {SAME_NOTE_STAGES.map((stage) => (
+                <option key={stage} value={stage}>
+                  {SAME_NOTE_LABELS[stage]}
+                </option>
+              ))}
+            </select>
+            {!s.demo && (
+              <button className="plain-button" onClick={() => begin()}>
+                换一轮
+              </button>
+            )}
+          </div>
         </div>
         <div className="progress-line">
           <i

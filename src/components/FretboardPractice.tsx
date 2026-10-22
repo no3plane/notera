@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import { StringIntervalPractice } from './StringIntervalPractice';
 import { SameNotePractice } from './SameNotePractice';
+import { PracticeModeToolbar } from './PracticeModeToolbar';
+import { MODE_DESCRIPTIONS } from '../lib/exercises';
 import type { PracticeController } from '../hooks/usePractice';
 import { Fretboard, positionLabel } from './Fretboard';
 import {
@@ -72,27 +73,27 @@ export function FretboardPractice({ controller }: { controller: PracticeControll
       ))}
     </div>
   );
-  return mode === 'strings' ? (
-    <StringIntervalPractice controller={controller} modeTabs={modeTabs} />
-  ) : mode === 'same-note' ? (
-    <SameNotePractice controller={controller} modeTabs={modeTabs} />
-  ) : (
-    <FretPositionPractice
-      key={mode}
-      controller={controller}
-      initialMode={mode}
-      modeTabs={modeTabs}
-    />
+  return (
+    <>
+      <PracticeModeToolbar description={MODE_DESCRIPTIONS.fretboard}>
+        {modeTabs}
+      </PracticeModeToolbar>
+      {mode === 'strings' ? (
+        <StringIntervalPractice controller={controller} />
+      ) : mode === 'same-note' ? (
+        <SameNotePractice controller={controller} />
+      ) : (
+        <FretPositionPractice key={mode} controller={controller} initialMode={mode} />
+      )}
+    </>
   );
 }
 function FretPositionPractice({
   controller,
   initialMode,
-  modeTabs,
 }: {
   controller: PracticeController;
   initialMode: FretMode;
-  modeTabs: ReactNode;
 }) {
   const [s, setSession] = useState<FretSession>(() => session(initialMode, 'natural'));
   const locked = useRef<number | null>(null);
@@ -212,25 +213,24 @@ function FretPositionPractice({
   return (
     <div className="practice-layout fret-layout">
       <section className="practice-board fret-board" aria-label="指板定位练习">
-        <div className="fret-mode-bar">
-          {modeTabs}
-          <select
-            aria-label="指板难度"
-            value={level}
-            onChange={(e) => begin(mode, e.target.value as FretLevel)}
-          >
-            {(['natural', 'chromatic'] as const).map((value) => (
-              <option value={value} key={value}>
-                {FRET_LEVEL_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="fret-round-bar">
+        <div className="practice-bar fret-round-bar">
           <span>{done ? '本轮完成' : `第 ${index + 1} / 10 题`}</span>
-          <button className="plain-button" onClick={() => begin()}>
-            换一轮
-          </button>
+          <div className="fret-round-actions">
+            <select
+              aria-label="指板难度"
+              value={level}
+              onChange={(e) => begin(mode, e.target.value as FretLevel)}
+            >
+              {(['natural', 'chromatic'] as const).map((value) => (
+                <option value={value} key={value}>
+                  {FRET_LEVEL_LABELS[value]}
+                </option>
+              ))}
+            </select>
+            <button className="plain-button" onClick={() => begin()}>
+              换一轮
+            </button>
+          </div>
         </div>
         <div className="progress-line">
           <i style={{ width: `${done ? 100 : (index + Number(resolved)) * 10}%` }} />
