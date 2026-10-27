@@ -8,12 +8,16 @@ import type { Mode } from '../lib/exercises';
 export function usePractice(notify: (message: string) => void) {
   const [state, dispatch] = useReducer(practiceReducer, undefined, (): PracticeState => {
     const progress = readProgress() ?? emptyProgress();
+    const mode: Mode =
+      new URLSearchParams(location.search).get('practice') === 'guitar-chords'
+        ? 'guitar-chords'
+        : 'interval';
     return {
       level: 'basic',
-      mode: 'interval',
+      mode,
       progress,
       backup: readProgress(BACKUP_KEY),
-      session: createSession('basic', progress.mistakes),
+      session: createSession('basic', progress.mistakes, performance.now(), mode),
     };
   });
   useEffect(() => {

@@ -4,6 +4,7 @@ import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
 import { FretboardPractice } from '../components/FretboardPractice';
 import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
+import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import {
   findExercise,
   KIND_LABELS,
@@ -36,7 +37,8 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       const exercise = findExercise(id);
       return exercise && exercise.kind === mode;
     }).length;
-  const stats = kindStats(progress, mode);
+  const stats =
+    mode === 'guitar-chords' ? { total: 0, correct: 0, time: 0 } : kindStats(progress, mode);
   const topic = TOPICS.find((t) => t.modes.includes(mode))!;
   const current = s.queue[s.index];
   const showNotation = current
@@ -57,6 +59,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.ctrlKey ||
         e.altKey ||
         mode === 'fretboard' ||
+        mode === 'guitar-chords' ||
         empty ||
         done
       )
@@ -104,11 +107,15 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   return (
     <>
       <Heading
-        eyebrow="PRACTICE ROOM"
-        description="音程、指板、和弦，逐项练习。每轮 10 题，分别练准确判断与快速定位。"
+        eyebrow={mode === 'guitar-chords' ? '吉他练习室' : 'PRACTICE ROOM'}
+        description={
+          mode === 'guitar-chords'
+            ? '一组一个大调，用第五、六弦根音的固定指法，把级数练到手上。'
+            : '音程、指板、和弦，逐项练习；拿起吉他，把乐理练到手上。'
+        }
         side="先练准确，再练熟练"
       >
-        乐理练习
+        {mode === 'guitar-chords' ? '实琴和弦' : '乐理练习'}
       </Heading>
       <div className="topic-tabs" role="group" aria-label="练习专题">
         {TOPICS.map((t, i) => (
@@ -125,7 +132,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </button>
         ))}
       </div>
-      {mode !== 'fretboard' && (
+      {mode !== 'fretboard' && mode !== 'guitar-chords' && (
         <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
           <div
             className={topic.modes.length > 1 ? 'segmented' : 'single-mode'}
@@ -151,7 +158,9 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </div>
         </PracticeModeToolbar>
       )}
-      {mode === 'fretboard' ? (
+      {mode === 'guitar-chords' ? (
+        <GuitarChordPractice />
+      ) : mode === 'fretboard' ? (
         <FretboardPractice controller={controller} />
       ) : (
         <div className="practice-layout">

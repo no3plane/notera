@@ -11,20 +11,22 @@ export const KINDS = [
   'chord-tones-reverse',
 ] as const;
 export type ExerciseKind = (typeof KINDS)[number];
-export type Mode = ExerciseKind;
+export type Mode = ExerciseKind | 'guitar-chords';
 export type StoredExerciseKind = ExerciseKind | 'strings' | 'chord-tones';
-export const KIND_LABELS: Record<ExerciseKind, string> = {
+export const KIND_LABELS: Record<Mode, string> = {
   interval: '判断音程',
   'build-note': '推算音名',
   fretboard: '指板定位',
   'chord-degree': '级数与和弦',
   'chord-tones-forward': '和弦名 → 构成音',
   'chord-tones-reverse': '构成音 → 和弦名',
+  'guitar-chords': '实琴和弦',
 };
 export const TOPICS: { label: string; modes: Mode[] }[] = [
   { label: '音程推算', modes: ['interval', 'build-note'] },
   { label: '指板定位', modes: ['fretboard'] },
   { label: '和弦对应', modes: ['chord-degree', 'chord-tones-forward', 'chord-tones-reverse'] },
+  { label: '实琴和弦', modes: ['guitar-chords'] },
 ];
 export const MODE_LABELS = KIND_LABELS;
 export const MODE_DESCRIPTIONS: Record<Mode, string> = {
@@ -34,6 +36,7 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'chord-degree': 'C 大调七个顺阶三和弦，交替练级数到和弦、和弦到级数。',
   'chord-tones-forward': '给出 C 大调顺阶三和弦名，用简谱选出三个构成音，选择顺序不限。',
   'chord-tones-reverse': '给出顺序随机的三个简谱音，判断它们组成的 C 大调顺阶三和弦。',
+  'guitar-chords': '一组只练一个大调。用第五、六弦根音的固定按法，把级数练到手上。',
 };
 export interface Exercise {
   id: string;

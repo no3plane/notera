@@ -1,0 +1,709 @@
+/* Existing Notera palette and type, achromatic-ledger composition (seed 1233094670).
+   At 1188px: 876px practice + 24px gutter + 288px reference = 1188px.
+   Signature: the seven-degree strip is a fixed route through this key's root positions. */
+.guitar-practice {
+  --guitar-secondary: #5c685b;
+  --guitar-control: #bcc6b7;
+  --guitar-raised: #f7f8f4;
+  --guitar-current: #edf0e9;
+  --guitar-primary: #25332e;
+  --guitar-dot: #415047;
+  --guitar-wire: #9ba696;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.page-enter:has(.guitar-practice) {
+  animation: none;
+}
+body:has(.guitar-practice) .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0;
+}
+body:has(.guitar-practice) footer {
+  font-size: 11px;
+  color: #5c685b;
+}
+body:has(.guitar-practice) .footer-note {
+  display: none;
+}
+body:has(.guitar-practice) .intro,
+body:has(.guitar-practice) .heading-side,
+body:has(.guitar-practice) .brand-sub,
+body:has(.guitar-practice) .topic-tabs button {
+  color: #5c685b;
+}
+.guitar-practice button,
+.guitar-practice select {
+  min-height: 44px;
+  border-radius: 6px;
+}
+.guitar-practice button:hover:not(:disabled) {
+  transform: none;
+}
+.guitar-practice button:disabled {
+  color: var(--guitar-secondary);
+  background: var(--guitar-raised);
+}
+.guitar-scope {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.guitar-scope label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+}
+.guitar-scope select,
+.guitar-chord-info select {
+  background: var(--white);
+  border: 1px solid var(--guitar-control);
+  padding: 8px 32px 8px 12px;
+  color: var(--ink);
+}
+.guitar-scope select:disabled {
+  opacity: 1;
+  color: var(--ink);
+  background: var(--guitar-current);
+}
+.guitar-scope > span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-scope > button {
+  margin-left: auto;
+}
+.guitar-steps {
+  display: flex;
+  margin: 24px 0;
+  padding: 0;
+  list-style: none;
+  gap: 28px;
+}
+.guitar-steps li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-steps li > span {
+  border: 1px solid var(--guitar-control);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.guitar-steps li.current {
+  color: var(--ink);
+  font-weight: 600;
+}
+.guitar-steps li.current > span {
+  background: var(--guitar-primary);
+  border-color: var(--guitar-primary);
+  color: var(--white);
+}
+.guitar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 24px;
+  align-items: start;
+}
+.guitar-board {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 0;
+}
+.guitar-board-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--guitar-secondary);
+}
+.guitar-board-header > span:first-child {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+.guitar-stage-heading {
+  font-size: 22px;
+  margin: 22px 0 8px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  outline: none;
+}
+.guitar-description {
+  color: var(--guitar-secondary);
+  font-size: 13px;
+  margin: 0 0 20px;
+  line-height: 1.9;
+}
+.guitar-overview-start {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.guitar-overview-start > span {
+  font-size: 12px;
+  color: var(--guitar-secondary);
+}
+.guitar-chord-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.guitar-chord-strip button {
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: var(--white);
+  padding: 14px 2px;
+}
+.guitar-chord-strip button[aria-pressed='true'] {
+  background: var(--guitar-current);
+  border-bottom: 2px solid var(--green);
+  padding-bottom: 12px;
+}
+.guitar-chord-strip button:hover {
+  background: var(--guitar-raised);
+}
+.guitar-chord-strip button span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-chord-strip button strong {
+  font-size: 19px;
+  font-weight: 500;
+}
+.guitar-chord-strip button small {
+  color: var(--guitar-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.guitar-voicing-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+  padding: 20px 0;
+}
+.chord-diagram {
+  margin: 0;
+  text-align: center;
+}
+.chord-diagram svg {
+  width: 100%;
+  max-width: 232px;
+  display: block;
+  margin: auto;
+}
+.chord-diagram figcaption {
+  color: var(--guitar-secondary);
+  font-size: 11px;
+  line-height: 1.9;
+}
+.chord-wire {
+  stroke: var(--guitar-wire);
+  stroke-width: 1;
+}
+.chord-nut {
+  stroke: var(--guitar-dot);
+  stroke-width: 4;
+}
+.chord-barre {
+  stroke: var(--guitar-dot);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.chord-dot {
+  fill: var(--guitar-dot);
+}
+.chord-root {
+  fill: var(--green);
+  stroke: var(--white);
+  stroke-width: 1.5;
+}
+.chord-axis {
+  fill: var(--guitar-secondary);
+  font-size: 12px;
+}
+.chord-finger {
+  fill: var(--white);
+  font-size: 12px;
+  font-weight: 500;
+}
+.chord-open {
+  fill: var(--white);
+  stroke: var(--guitar-dot);
+  stroke-width: 1.5;
+}
+.chord-root-open {
+  stroke: var(--green);
+  stroke-width: 2;
+}
+.guitar-chord-info > span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-chord-info h3 {
+  font-size: 32px;
+  font-weight: 500;
+  margin: 5px 0;
+}
+.guitar-chord-info p {
+  font-size: 13px;
+  color: var(--guitar-secondary);
+}
+.guitar-chord-info .guitar-root-position {
+  color: var(--green-dark);
+  font-weight: 500;
+}
+.guitar-chord-info label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 20px;
+}
+.guitar-chord-info select {
+  max-width: 100%;
+  width: 100%;
+  padding-right: 8px;
+  font-size: 13px;
+}
+.guitar-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.guitar-bottom > span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-primary {
+  border: 1px solid var(--guitar-primary);
+  color: var(--white);
+  background: var(--guitar-primary);
+  padding: 10px 18px;
+  font-weight: 500;
+}
+.guitar-primary:hover:not(:disabled) {
+  background: var(--green-dark);
+}
+.guitar-secondary {
+  color: var(--ink);
+  border: 1px solid var(--guitar-control);
+  background: var(--white);
+  padding: 10px 16px;
+}
+.guitar-text-button {
+  color: var(--guitar-secondary);
+  border: 0;
+  background: transparent;
+  padding: 8px 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.guitar-aside {
+  padding: 0 0 0 4px;
+}
+.guitar-aside h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.guitar-aside p {
+  font-size: 13px;
+  color: var(--guitar-secondary);
+  line-height: 1.9;
+  margin: 0;
+}
+.guitar-formula {
+  padding: 20px 0;
+  margin: 20px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.guitar-formula > span {
+  font-size: 12px;
+  color: var(--guitar-secondary);
+}
+.guitar-formula p {
+  color: var(--ink);
+  margin: 8px 0 4px;
+  white-space: nowrap;
+}
+.guitar-formula small {
+  font-size: 12px;
+  color: var(--guitar-secondary);
+}
+.guitar-key-stats {
+  margin: 8px 0 12px;
+}
+.guitar-key-stats > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+.guitar-key-stats dt {
+  color: var(--guitar-secondary);
+  font-size: 13px;
+}
+.guitar-key-stats dd {
+  margin: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.guitar-aside .guitar-save-note,
+.guitar-aside .guitar-self-note {
+  font-size: 12px;
+}
+.guitar-plan-explainer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.guitar-plan-explainer summary {
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 44px;
+}
+.guitar-plan-explainer p {
+  margin-bottom: 20px;
+}
+.guitar-self-note {
+  margin-top: 12px !important;
+}
+.guitar-progress {
+  margin: 20px 0;
+  background: var(--guitar-current);
+  height: 4px;
+}
+.guitar-progress span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+.guitar-prompt {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 0 32px;
+}
+.guitar-prompt > div {
+  text-align: center;
+  min-width: 56px;
+}
+.guitar-prompt span {
+  display: block;
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-prompt strong {
+  display: block;
+  font-size: 40px;
+  line-height: 1.4;
+  color: var(--green-dark);
+  font-weight: 500;
+}
+.guitar-hints {
+  background: var(--guitar-raised);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+}
+.guitar-hints p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+.guitar-hints b {
+  font-weight: 500;
+}
+.guitar-keyboard-hint {
+  text-align: right;
+  color: var(--guitar-secondary);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+.guitar-answer {
+  margin: 0 auto 12px;
+  max-width: none;
+}
+.guitar-voicing-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.guitar-voicing-option {
+  flex: 0 0 min(180px, calc((100% - 16px) / 2));
+  min-width: 0;
+  text-align: center;
+}
+.guitar-voicing-position {
+  color: var(--ink);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+.guitar-voicing-label {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--guitar-secondary);
+  min-height: 22px;
+}
+.guitar-voicing-label.is-chosen {
+  color: var(--green-dark);
+  font-weight: 500;
+}
+.guitar-voicing-option .chord-diagram svg {
+  max-width: 180px;
+}
+.guitar-voicing-option .chord-diagram figcaption {
+  display: none;
+}
+.guitar-options-legend {
+  flex: 0 0 100%;
+  color: var(--guitar-secondary);
+  font-size: 11px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.9;
+}
+.guitar-answer-chord {
+  text-align: center;
+  min-width: 0;
+}
+.guitar-board:has(.guitar-answer) > .guitar-description {
+  display: none;
+}
+.guitar-board:has(.guitar-answer) .guitar-prompt {
+  padding: 8px 0 16px;
+}
+.guitar-answer .chord-diagram svg {
+  max-width: 180px;
+}
+.guitar-answer-chord h3 {
+  font-size: 26px;
+  margin: 0;
+  font-weight: 500;
+}
+.guitar-answer-chord > span {
+  font-size: 12px;
+  color: var(--guitar-secondary);
+}
+.guitar-answer-multiple {
+  max-width: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 16px;
+}
+.guitar-answer-multiple .chord-diagram figcaption {
+  display: none;
+}
+.guitar-answer-multiple .chord-diagram svg {
+  min-width: 0;
+}
+.guitar-listen {
+  display: block;
+  margin: 0 auto;
+  font-size: 12px;
+}
+.guitar-self-check {
+  font-size: 12px;
+  color: var(--guitar-secondary);
+  text-align: center;
+  margin: 16px 0 12px;
+}
+.guitar-rating {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.guitar-rating button {
+  padding: 12px 4px;
+  border: 1px solid var(--guitar-control);
+  background: var(--white);
+  font-size: 14px;
+}
+.guitar-rating button:hover {
+  border-color: var(--ink);
+  background: var(--guitar-raised);
+}
+.guitar-rating button span {
+  font-size: 11px;
+  color: var(--guitar-secondary);
+  margin-right: 8px;
+}
+.guitar-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 28px 0;
+}
+.guitar-summary-stats > div {
+  border-right: 1px solid var(--line);
+  padding-left: 20px;
+}
+.guitar-summary-stats > div:first-child {
+  padding-left: 0;
+}
+.guitar-summary-stats > div:last-child {
+  border-right: 0;
+}
+.guitar-summary-stats span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+  display: block;
+}
+.guitar-summary-stats b {
+  font-weight: 400;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.guitar-summary-review {
+  margin: 28px 0;
+}
+.guitar-summary-review h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+.guitar-summary-review p {
+  font-size: 13px;
+  color: var(--guitar-secondary);
+  line-height: 2;
+}
+@media (max-width: 1050px) {
+  .guitar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .guitar-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+    padding: 0;
+  }
+  .guitar-aside > * {
+    grid-column: 1 / -1;
+  }
+  .guitar-formula {
+    margin-top: 16px;
+  }
+}
+@media (max-width: 600px) {
+  .guitar-scope {
+    gap: 8px;
+  }
+  .guitar-overview-start {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .guitar-overview-start .guitar-primary {
+    width: 100%;
+  }
+  .guitar-scope > span {
+    width: 100%;
+    order: 2;
+  }
+  .guitar-steps {
+    justify-content: space-between;
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .guitar-steps li {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 11px;
+  }
+  .guitar-board {
+    padding: 16px;
+  }
+  .guitar-stage-heading {
+    font-size: 20px;
+  }
+  .guitar-chord-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .guitar-chord-strip button {
+    padding: 10px 2px;
+  }
+  .guitar-chord-strip button[aria-pressed='true'] {
+    padding-bottom: 8px;
+  }
+  .guitar-chord-strip button strong {
+    font-size: 18px;
+  }
+  .guitar-voicing-detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 20px 0;
+  }
+  .guitar-chord-info {
+    padding: 0 8px;
+  }
+  .guitar-chord-info h3 {
+    font-size: 28px;
+  }
+  .guitar-chord-info label {
+    margin-top: 12px;
+  }
+  .guitar-bottom {
+    flex-wrap: wrap;
+  }
+  .guitar-bottom > span {
+    width: 100%;
+  }
+  .guitar-bottom > .guitar-primary {
+    margin-left: auto;
+  }
+  .guitar-summary-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .guitar-summary-actions > .guitar-primary {
+    margin-left: 0;
+  }
+  .guitar-answer-multiple {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px 8px;
+  }
+  .guitar-answer-multiple .chord-diagram svg {
+    max-width: 160px;
+  }
+  .guitar-rating {
+    gap: 6px;
+  }
+  .guitar-rating button {
+    font-size: 13px;
+  }
+  .guitar-rating button span {
+    display: none;
+  }
+  .guitar-prompt {
+    gap: 8px;
+    padding-top: 20px;
+  }
+  .guitar-prompt strong {
+    font-size: 34px;
+  }
+  .guitar-keyboard-hint {
+    display: none;
+  }
+}

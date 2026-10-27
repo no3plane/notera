@@ -85,8 +85,8 @@ export function createSession(
   exerciseMistakes: string[] = [],
 ): Session {
   let queue: Question[];
-  if (mode === 'fretboard') {
-    queue = []; // Fretboard recognition and navigation own their session and records.
+  if (mode === 'fretboard' || mode === 'guitar-chords') {
+    queue = []; // Interactive guitar modes own their sessions and records.
   } else if (level === 'review') {
     const shuffled = [...mistakes];
     for (let i = shuffled.length - 1; i > 0; i--) {
