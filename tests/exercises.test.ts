@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CHORDS, exerciseBank, findExercise, KINDS, transpose } from '../src/lib/exercises';
+import {
+  CHORDS,
+  exerciseBank,
+  findExercise,
+  isForwardChordMode,
+  KINDS,
+  transpose,
+} from '../src/lib/exercises';
 import {
   createSession,
   exerciseQuestion,
@@ -56,11 +63,12 @@ describe('question content', () => {
       for (const level of ['basic', 'mixed'] as const) {
         const session = createSession(level, [], 100, mode);
         expect(session.queue).toHaveLength(10);
-        if (mode === 'chord-tones-forward') {
+        if (isForwardChordMode(mode)) {
           expect(new Set(session.queue.slice(0, 7).map(questionKey)).size).toBe(7);
           expect(new Set(session.queue.slice(7).map(questionKey)).size).toBe(3);
           expect(questionKey(session.queue[6])).not.toBe(questionKey(session.queue[7]));
-          expect(session.queue.every((q) => q.exercise?.answer.length === 3)).toBe(true);
+          const count = mode === 'chord-tones-forward' ? 3 : 4;
+          expect(session.queue.every((q) => q.exercise?.answer.length === count)).toBe(true);
         } else {
           expect(new Set(session.queue.map(questionKey)).size).toBe(10);
         }
@@ -94,9 +102,59 @@ describe('question content', () => {
       ).toEqual(['F']);
     }
   });
+  it('uses the correct C major sevenths in both directions with unambiguous scrambled tones', () => {
+    const chords = [
+      ['Cmaj7', 'Imaj7', '1357'],
+      ['Dm7', 'iim7', '2461'],
+      ['Em7', 'iiim7', '3572'],
+      ['Fmaj7', 'IVmaj7', '4613'],
+      ['G7', 'V7', '5724'],
+      ['Am7', 'vim7', '6135'],
+      ['Bm7♭5', 'viiø7', '7246'],
+    ];
+    const reverse = exerciseBank().filter((e) => e.kind === 'chord-seventh-tones-reverse');
+    expect(new Set(reverse.map((e) => e.title)).size).toBe(7 * 24);
+    for (const [symbol, roman, tones] of chords) {
+      expect(findExercise(`seventh-degree:${symbol}:true`)?.answer).toEqual([roman]);
+      expect(findExercise(`seventh-degree:${symbol}:false`)?.answer).toEqual([symbol]);
+      expect(findExercise(`seventh-tones:${symbol}:false`)?.answer).toEqual([...tones]);
+      const variants = reverse.filter((e) => e.answer[0] === symbol);
+      expect(variants).toHaveLength(24);
+      for (const e of variants) {
+        const displayed = e.notes.map((note) => notation(note, 'numbered'));
+        expect([...displayed].sort()).toEqual([...tones].sort());
+        expect(e.title).toBe(`${displayed.join(' · ')}，组成什么和弦？`);
+        expect(e.listenBefore).toEqual(e.notes);
+      }
+    }
+    const round = createSession('basic', [], 0, 'chord-seventh-degree');
+    expect(round.queue.every((q, i) => questionKey(q).endsWith(`:${i % 2 === 1}`))).toBe(true);
+  });
 });
 
 describe('multi-type progress and review', () => {
+  it('keeps triad and seventh progress and review separate after loading saved records', () => {
+    const triadId = 'tones:Dm:false';
+    const seventhId = 'seventh-tones:Dm7:false';
+    const triad = submit(initial(triadId), ['1', '2', '3']);
+    const seventh = submit({ ...initial(seventhId), progress: triad.progress }, [
+      '1',
+      '2',
+      '3',
+      '4',
+    ]);
+    writeProgress(seventh.progress);
+    const restored = readProgress()!;
+    for (const [kind, id] of [
+      ['chord-tones-forward', triadId],
+      ['chord-seventh-tones-forward', seventhId],
+    ] as const) {
+      expect(kindStats(restored, kind)).toMatchObject({ total: 1, correct: 0 });
+      expect(
+        createSession('review', [], 0, kind, restored.exerciseMistakes).queue.map(questionKey),
+      ).toEqual([id]);
+    }
+  });
   it('requires exactly three distinct tones, accepts any order, and scores only once', () => {
     let state = initial('tones:Am:false');
     state = practiceReducer(state, { type: 'choice', value: '6' });

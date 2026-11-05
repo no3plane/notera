@@ -41,6 +41,9 @@ body:has(.guitar-practice) .topic-tabs button {
 .guitar-practice button:hover:not(:disabled) {
   transform: none;
 }
+.guitar-practice .chord-family button.active {
+  box-shadow: none;
+}
 .guitar-practice button:disabled {
   color: var(--guitar-secondary);
   background: var(--guitar-raised);
@@ -354,6 +357,19 @@ body:has(.guitar-practice) .topic-tabs button {
   font-size: 12px;
   color: var(--guitar-secondary);
 }
+.guitar-quality-list {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.guitar-quality-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.guitar-quality-list dd {
+  margin: 0;
+  color: var(--guitar-secondary);
+}
 .guitar-key-stats {
   margin: 8px 0 12px;
 }
@@ -650,6 +666,9 @@ body:has(.guitar-practice) .topic-tabs button {
   .guitar-chord-strip button strong {
     font-size: 18px;
   }
+  .guitar-sevenths .guitar-chord-strip button strong {
+    font-size: 15px;
+  }
   .guitar-voicing-detail {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
@@ -702,6 +721,9 @@ body:has(.guitar-practice) .topic-tabs button {
   }
   .guitar-prompt strong {
     font-size: 34px;
+  }
+  .guitar-sevenths .guitar-prompt strong {
+    font-size: clamp(20px, 6vw, 34px);
   }
   .guitar-keyboard-hint {
     display: none;

@@ -1,5 +1,7 @@
-import { transpose, shuffle } from './exercises';
-import { midi, name } from './theory';
+import { shuffle } from './exercises';
+import { majorKeyChords } from './chordHarmony';
+import type { ChordFamily, DiatonicChord, SeventhQuality } from './chordHarmony';
+import { midi } from './theory';
 import type { Note } from './types';
 
 export const GUITAR_KEYS = [
@@ -17,19 +19,9 @@ export const GUITAR_KEYS = [
   ['B', 'B', 0],
 ] as const;
 export type GuitarKey = (typeof GUITAR_KEYS)[number][0];
-export type ChordQuality = 'major' | 'minor' | 'dim';
 export type RootString = 5 | 6;
-export const CHORD_DEGREES = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-export const QUALITY_LABELS = { major: '大三和弦', minor: '小三和弦', dim: '减三和弦' };
 export const GUITAR_TUNING = [40, 45, 50, 55, 59, 64]; // Sixth to first string, standard tuning.
-export interface GuitarChord {
-  degree: number;
-  roman: string;
-  root: Note;
-  symbol: string;
-  quality: ChordQuality;
-  tones: Note[];
-}
+export type GuitarChord = DiatonicChord;
 export interface ChordVoicing {
   rootString: RootString;
   rootFret: number;
@@ -37,24 +29,52 @@ export interface ChordVoicing {
   fingers: (number | null)[];
   barre?: { fret: number; from: number; to: number; finger: number };
 }
-export function chordsInKey(key: GuitarKey): GuitarChord[] {
+export function chordsInKey(key: GuitarKey, family: ChordFamily = 'triad'): GuitarChord[] {
   const entry = GUITAR_KEYS.find(([label]) => label === key)!;
-  const tonic: Note = { letter: entry[1], acc: entry[2], octave: 3 };
-  return [0, 2, 4, 5, 7, 9, 11].map((semitones, index) => {
-    const root = transpose(tonic, index + 1, semitones, 1);
-    const quality: ChordQuality =
-      index === 6 ? 'dim' : [1, 2, 5].includes(index) ? 'minor' : 'major';
-    const third = quality === 'major' ? 4 : 3;
-    return {
-      degree: index + 1,
-      roman: CHORD_DEGREES[index],
-      root,
-      quality,
-      symbol: name(root, false) + (quality === 'minor' ? 'm' : quality === 'dim' ? 'dim' : ''),
-      tones: [root, transpose(root, 3, third, 1), transpose(root, 5, quality === 'dim' ? 6 : 7, 1)],
-    };
-  });
+  return majorKeyChords({ letter: entry[1], acc: entry[2], octave: 3 }, family);
 }
+
+function seventhVoicing(quality: SeventhQuality, rootString: RootString, r: number): ChordVoicing {
+  const shape = (
+    frets: (number | null)[],
+    fingers: (number | null)[],
+    barreTo?: number,
+  ): ChordVoicing => ({
+    rootString,
+    rootFret: r,
+    frets,
+    fingers: fingers.map((finger, i) => (frets[i] === 0 ? 0 : finger)),
+    ...(r > 0 && barreTo !== undefined
+      ? { barre: { fret: r, from: 6 - rootString, to: barreTo, finger: 1 } }
+      : {}),
+  });
+  if (rootString === 5) {
+    switch (quality) {
+      case 'maj7':
+        return shape([null, r, r + 2, r + 1, r + 2, null], [null, 1, 3, 2, 4, null]);
+      case 'm7':
+        return shape([null, r, r + 2, r, r + 1, r], [null, 1, r ? 3 : 2, 1, r ? 2 : 1, 1], 5);
+      case '7':
+        return shape([null, r, r + 2, r, r + 2, r], [null, 1, r ? 3 : 2, 1, r ? 4 : 3, 1], 5);
+      case 'm7b5':
+        return shape([null, r, r + 1, r, r + 1, null], [null, 1, r ? 2 : 1, 1, r ? 3 : 2, null], 3);
+    }
+  }
+  switch (quality) {
+    case 'maj7':
+      // Move the open Emaj7 shape: R, 5, 7, 3, 5, R.
+      return shape([r, r + 2, r + 1, r + 1, r, r], [1, r ? 4 : 3, r ? 2 : 1, r ? 3 : 2, 1, 1], 5);
+    case 'm7':
+      return shape([r, r + 2, r, r, r, r], [1, r ? 3 : 2, 1, 1, 1, 1], 5);
+    case '7':
+      return shape([r, r + 2, r, r + 1, r, r], [1, r ? 3 : 2, 1, r ? 2 : 1, 1, 1], 5);
+    case 'm7b5':
+      return r === 0
+        ? shape([0, 1, 0, 0, null, null], [0, 1, 0, 0, null, null])
+        : shape([r, null, r, r, r - 1, null], [2, null, 3, 4, 1, null]);
+  }
+}
+
 export function voicingFor(
   chord: GuitarChord,
   rootString: RootString,
@@ -62,6 +82,8 @@ export function voicingFor(
 ): ChordVoicing {
   const fret = ((midi(chord.root) - (rootString === 6 ? 40 : 45) + 120) % 12) + octave * 12;
   const r = fret;
+  if (chord.quality !== 'major' && chord.quality !== 'minor' && chord.quality !== 'dim')
+    return seventhVoicing(chord.quality, rootString, r);
   if (chord.quality === 'dim') {
     // A-root diminished triad: 1, ♭5, 1, ♭3. No diminished-seventh substitution.
     if (rootString === 5)
@@ -145,7 +167,8 @@ export function recommendedVoicings(chords: GuitarChord[]): ChordVoicing[] {
           sum +
           v.rootFret * 0.35 +
           Math.max(0, v.rootFret - 7) * 2 +
-          (v.rootString === 6 && chords[i].quality === 'dim' ? 7 : 0),
+          (v.rootString === 6 && chords[i].quality === 'dim' ? 7 : 0) +
+          (v.rootString === 6 && chords[i].quality === 'm7b5' && v.rootFret > 0 ? 3 : 0),
         0,
       ) +
       LINKS.reduce((sum, [a, b]) => sum + Math.abs(positions[a] - positions[b]), 0) +
@@ -201,12 +224,15 @@ export interface GuitarChordProgress {
   overrides: Partial<Record<GuitarKey, Partial<Record<number, RootString>>>>;
 }
 export const GUITAR_PROGRESS_KEY = 'notera.guitar-chords.v1';
+const SEVENTH_GUITAR_PROGRESS_KEY = 'notera.guitar-seventh-chords.v1';
+export const guitarProgressKey = (family: ChordFamily) =>
+  family === 'seventh' ? SEVENTH_GUITAR_PROGRESS_KEY : GUITAR_PROGRESS_KEY;
 export const validKey = (key: unknown): key is GuitarKey =>
   GUITAR_KEYS.some(([label]) => label === key);
-export function readGuitarProgress(): GuitarChordProgress {
+export function readGuitarProgress(family: ChordFamily = 'triad'): GuitarChordProgress {
   const fallback: GuitarChordProgress = { key: 'C', attempts: [], overrides: {} };
   try {
-    const data = JSON.parse(localStorage.getItem(GUITAR_PROGRESS_KEY) ?? 'null');
+    const data = JSON.parse(localStorage.getItem(guitarProgressKey(family)) ?? 'null');
     if (!data || typeof data !== 'object') return fallback;
     const attempts = Array.isArray(data.attempts)
       ? data.attempts.filter(

@@ -1,7 +1,14 @@
 import { interval, makeQuestion } from './theory';
 import { emptyProgress, pairKey } from './progress';
 import type { Level, NotePair, Progress, Quality } from './types';
-import { exercisesFor, findExercise, shuffle, takeExercise } from './exercises';
+import {
+  exercisesFor,
+  findExercise,
+  isForwardChordMode,
+  isGuitarChordMode,
+  shuffle,
+  takeExercise,
+} from './exercises';
 import type { Exercise, ExerciseKind, Mode } from './exercises';
 import { validMemoryAttempt } from './fretboardMemory';
 import type { MemoryAttempt, RootString } from './fretboardMemory';
@@ -85,7 +92,7 @@ export function createSession(
   exerciseMistakes: string[] = [],
 ): Session {
   let queue: Question[];
-  if (mode === 'fretboard' || mode === 'guitar-chords') {
+  if (mode === 'fretboard' || isGuitarChordMode(mode)) {
     queue = []; // Interactive guitar modes own their sessions and records.
   } else if (level === 'review') {
     const shuffled = [...mistakes];
@@ -108,7 +115,7 @@ export function createSession(
     const pool = shuffle(exercisesFor(mode, level));
     while (queue.length < 10) {
       // There are seven forward prompts. Cover each before repeating to fill ten turns.
-      if (mode === 'chord-tones-forward' && !pool.length) {
+      if (isForwardChordMode(mode) && !pool.length) {
         pool.push(...shuffle(exercisesFor(mode, level)));
         seen.clear();
         if (pool.at(-1)?.id === queue.at(-1)?.exercise?.id) {

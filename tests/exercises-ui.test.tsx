@@ -13,6 +13,43 @@ function currentExercise() {
 }
 
 describe('new exercise flows', () => {
+  it('switches the same prompt type to sevenths, accepts four distinct tones, and remembers the selection', async () => {
+    const user = userEvent.setup();
+    const view = render(<App />);
+    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '和弦名 → 构成音' }));
+    const toggle = screen.getByRole('button', { name: '七和弦' });
+    toggle.focus();
+    await user.keyboard(' ');
+    const exercise = currentExercise();
+    expect(exercise.kind).toBe('chord-seventh-tones-forward');
+    const choices = within(screen.getByRole('group', { name: '选择四个构成音' }));
+    const tones = [...exercise.answer].reverse();
+    await user.keyboard(tones.slice(0, 3).join(''));
+    const submit = screen.getByRole('button', { name: '确认答案 ↗' }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+    await user.keyboard(tones[3]);
+    expect(choices.getAllByRole('button', { pressed: true })).toHaveLength(4);
+    await user.keyboard(exercise.choices.find((value) => !tones.includes(value))!);
+    expect(choices.getAllByRole('button', { pressed: true })).toHaveLength(4);
+    await user.keyboard('{Enter}');
+    expect(screen.getByText(/✓ 回答正确/)).toBeTruthy();
+    expect(screen.getByText(/加上七音/)).toBeTruthy();
+    expect(readProgress()?.byKind?.['chord-seventh-tones-forward']?.correct).toBe(1);
+    expect(readProgress()?.byKind?.['chord-tones-forward']).toBeUndefined();
+
+    view.unmount();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    expect(screen.getByRole('button', { name: '七和弦', pressed: true })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '构成音 → 和弦名' }));
+    const reverse = currentExercise();
+    expect(reverse.kind).toBe('chord-seventh-tones-reverse');
+    play.mockClear();
+    await user.click(screen.getByRole('button', { name: '听听题目' }));
+    expect(play).toHaveBeenCalledWith(reverse.notes);
+    expect(reverse.notes).toHaveLength(4);
+  });
   it('plays only the start note before a derivation answer, then reveals the target', async () => {
     const user = userEvent.setup();
     render(<App />);

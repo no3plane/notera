@@ -431,6 +431,10 @@ footer {
   font-weight: 500;
   margin: 8px 0 24px;
 }
+.practice-local-label {
+  font-size: 9px;
+  color: #a0aa91;
+}
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -843,6 +847,17 @@ footer {
   color: #7c8972;
   line-height: 1.8;
 }
+.practice-mode-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.chord-family button {
+  min-height: 44px;
+  color: var(--ink);
+  white-space: nowrap;
+}
 .mode-description {
   font-size: 12px;
   color: #6e7d69;
@@ -944,6 +959,74 @@ footer {
   flex-shrink: 0;
 }
 
+/* Keep the chord question at its own height and use readable labels around the controls. */
+body:has(.chord-theory) {
+  --chord-secondary: #5c685b;
+}
+body:has(.chord-theory)
+  :is(footer, .eyebrow, .brand-sub, .intro, .heading-side, .topic-tabs small) {
+  font-size: 11px;
+  color: var(--chord-secondary);
+}
+body:has(.chord-theory) :is(.eyebrow, footer) {
+  letter-spacing: normal;
+}
+body:has(.chord-theory) .topic-tabs small {
+  opacity: 1;
+}
+body:has(.chord-theory) :is(.topic-tabs button:not(.active), .mode-description) {
+  color: var(--chord-secondary);
+}
+.page-enter:has(.chord-theory) {
+  animation: none;
+}
+.mode-toolbar:has(.chord-family) p,
+.mode-toolbar:has(.chord-family) .segmented button {
+  font-size: 11px;
+  color: var(--chord-secondary);
+}
+.mode-toolbar:has(.chord-family) .segmented button {
+  min-height: 44px;
+  font-size: 12px;
+}
+.practice-mode-groups:has(.chord-family) .segmented button.active {
+  color: var(--green-dark);
+  box-shadow: none;
+}
+.chord-theory {
+  align-items: start;
+}
+.chord-theory
+  :is(
+    .practice-bar,
+    .practice-bar select,
+    .exercise-context,
+    .answer-title,
+    .plain-button,
+    .stat span,
+    .practice-local-label,
+    .history-row,
+    .shortcut,
+    .hint-box,
+    .empty-history
+  ) {
+  font-size: 12px;
+  color: var(--chord-secondary);
+}
+.chord-theory .exercise-kind {
+  font-size: 11px;
+  letter-spacing: normal;
+}
+.chord-theory :is(.stat span, .kind-progress > div, .history-row) {
+  font-size: 13px;
+}
+.chord-theory .kind-progress > div:not(.current) {
+  color: var(--chord-secondary);
+}
+.chord-theory .shortcut kbd {
+  font-size: inherit;
+}
+
 @media (max-width: 780px) {
   .mode-toolbar {
     align-items: flex-start;
@@ -984,6 +1067,15 @@ footer {
   .mode-toolbar .segmented button {
     justify-content: center;
     flex: 1;
+  }
+  .mode-toolbar:has(.chord-family) {
+    padding-top: 12px;
+  }
+  .chord-theory .exercise-heading {
+    margin-block: 16px;
+  }
+  .chord-theory .submit-row {
+    margin-top: 16px;
   }
   .exercise-heading h2 {
     font-size: 19px;

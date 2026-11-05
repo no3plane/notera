@@ -7,6 +7,56 @@ import { GuitarChordPractice } from '../src/components/GuitarChordPractice';
 import { GUITAR_PROGRESS_KEY, readGuitarProgress } from '../src/lib/guitarChords';
 
 describe('single-key guitar practice', () => {
+  it('shows the full Emaj7 shape for the tonic in E major, open and at fret 12', async () => {
+    const user = userEvent.setup();
+    render(<GuitarChordPractice family="seventh" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: '本组调性' }), 'E');
+    expect(
+      screen.getByRole('img', {
+        name: 'Emaj7 指法：第 6 弦空弦，第 5 弦第 2 品，第 4 弦第 1 品，第 3 弦第 1 品，第 2 弦空弦，第 1 弦空弦',
+      }),
+    ).toBeTruthy();
+    const fretted = screen.getByRole('img', {
+      name: 'Emaj7 指法：第 6 弦第 12 品，第 5 弦第 14 品，第 4 弦第 13 品，第 3 弦第 13 品，第 2 弦第 12 品，第 1 弦第 12 品',
+    });
+    expect(fretted.querySelector('.chord-barre')).not.toBeNull();
+  });
+  it('keeps separate keys, voicing preferences and attempts when switching chord families', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const user = userEvent.setup();
+    localStorage.setItem(
+      GUITAR_PROGRESS_KEY,
+      JSON.stringify({ key: 'G', attempts: [], overrides: { G: { 1: 5 } } }),
+    );
+    history.replaceState(null, '', '/?practice=guitar-chords');
+    render(<App />);
+    history.replaceState(null, '', '/');
+    await user.click(screen.getByRole('button', { name: '七和弦' }));
+    const key = () => screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement;
+    expect(key().value).toBe('C');
+    await user.selectOptions(key(), 'F♯');
+    await user.selectOptions(screen.getByRole('combobox', { name: '本组使用的按法' }), '6');
+    await user.click(screen.getByRole('button', { name: '查看 viiø7 E♯m7♭5 指法' }));
+    expect(screen.getByText(/减三和弦加上小七度音/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
+    expect(document.querySelector('.guitar-prompt')?.textContent).toContain('Imaj7');
+    await user.click(screen.getByRole('button', { name: '一点提示' }));
+    expect(document.querySelector('.guitar-hints')?.textContent).toContain('大七和弦');
+    await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
+    expect(screen.getAllByRole('img', { name: /F♯maj7 指法/ })).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: /想了一会/ }));
+
+    await user.click(screen.getByRole('button', { name: '三和弦' }));
+    expect(key().value).toBe('G');
+    expect(readGuitarProgress()).toEqual({ key: 'G', attempts: [], overrides: { G: { 1: 5 } } });
+    await user.click(screen.getByRole('button', { name: '七和弦' }));
+    expect(key().value).toBe('F♯');
+    expect(readGuitarProgress('seventh')).toMatchObject({
+      key: 'F♯',
+      attempts: [{ degrees: [1], rating: 'slow', hints: 1 }],
+      overrides: { 'F♯': { 1: 6 } },
+    });
+  });
   it('draws and describes the first-string note of the full fifth-string C major shape', () => {
     render(<GuitarChordPractice />);
     const diagram = screen.getByRole('img', {

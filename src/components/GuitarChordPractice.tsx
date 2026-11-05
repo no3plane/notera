@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ChordVoicingOptions } from './ChordVoicingOptions';
 import { useAudio } from '../hooks/useAudio';
 import {
-  CHORD_DEGREES,
   GUITAR_KEYS,
-  GUITAR_PROGRESS_KEY,
   PROGRESSIONS,
-  QUALITY_LABELS,
   chordsInKey,
+  guitarProgressKey,
   pendingDegrees,
   readGuitarProgress,
   recallQueue,
@@ -16,6 +15,8 @@ import {
   voicingFor,
   voicingNotes,
 } from '../lib/guitarChords';
+import { CHORD_FAMILY_LABELS, QUALITY_LABELS } from '../lib/chordHarmony';
+import type { ChordFamily } from '../lib/chordHarmony';
 import { name } from '../lib/theory';
 import type {
   ChordAttempt,
@@ -35,8 +36,16 @@ const PHASES = [
 ] as const;
 const RATING_LABELS = { easy: '顺利', slow: '想了一会', missed: '没按出来' };
 
-export function GuitarChordPractice() {
-  const [progress, setProgress] = useState(readGuitarProgress);
+export function GuitarChordPractice({
+  family = 'triad',
+  familySwitch,
+}: {
+  family?: ChordFamily;
+  familySwitch?: ReactNode;
+}) {
+  const [progress, setProgress] = useState(() => readGuitarProgress(family));
+  const seventh = family === 'seventh';
+  const familyLabel = CHORD_FAMILY_LABELS[family];
   const [storageError, setStorageError] = useState(false);
   const key = progress.key;
   const [phase, setPhase] = useState<Phase>('overview');
@@ -50,7 +59,7 @@ export function GuitarChordPractice() {
   const play = useAudio(setAudioError);
   const heading = useRef<HTMLHeadingElement>(null);
   const gradeLock = useRef(false);
-  const chords = useMemo(() => chordsInKey(key), [key]);
+  const chords = useMemo(() => chordsInKey(key, family), [key, family]);
   const recommended = useMemo(() => recommendedVoicings(chords), [chords]);
   const plan = chords.map((chord, i) => {
     const root = progress.overrides[key]?.[chord.degree];
@@ -71,12 +80,12 @@ export function GuitarChordPractice() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(GUITAR_PROGRESS_KEY, JSON.stringify(progress));
+      localStorage.setItem(guitarProgressKey(family), JSON.stringify(progress));
       setStorageError(false);
     } catch {
       setStorageError(true);
     }
-  }, [progress]);
+  }, [progress, family]);
   useEffect(() => {
     gradeLock.current = false;
   }, [phase, index]);
@@ -158,8 +167,12 @@ export function GuitarChordPractice() {
   });
 
   return (
-    <section className="guitar-practice" aria-label="实琴和弦练习">
+    <section
+      className={`guitar-practice${seventh ? ' guitar-sevenths' : ''}`}
+      aria-label="实琴和弦练习"
+    >
       <div className="guitar-scope">
+        {familySwitch}
         <label>
           本组调性
           <select
@@ -203,7 +216,7 @@ export function GuitarChordPractice() {
                 ? `${phase === 'recall' ? '级数' : phase === 'connect' ? '连接' : '复练'} ${index + 1} / ${queue.length}`
                 : phase === 'summary'
                   ? '本组记录'
-                  : '七个顺阶三和弦'}
+                  : `七个顺阶${familyLabel}`}
             </span>
           </div>
           <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
@@ -221,7 +234,7 @@ export function GuitarChordPractice() {
           {phase === 'overview' ? (
             <>
               <p className="guitar-description">
-                按 I → vii° 顺着弹一遍。本组推荐根音位置集中在 {region}
+                按 {chords[0].roman} → {chords[6].roman} 顺着弹一遍。本组推荐根音位置集中在 {region}
                 ，同时展示第五、六弦根音的按法供你对照。
               </p>
               <div className="guitar-overview-start">
@@ -254,7 +267,7 @@ export function GuitarChordPractice() {
                 />
                 <div className="guitar-chord-info">
                   <span>
-                    {CHORD_DEGREES[selected - 1]} · 第 {selected} 级
+                    {chords[selected - 1].roman} · 第 {selected} 级
                   </span>
                   <h3>{chords[selected - 1].symbol}</h3>
                   <p>
@@ -277,6 +290,11 @@ export function GuitarChordPractice() {
                       ))}
                     </select>
                   </label>
+                  {chords[selected - 1].quality === 'm7b5' && (
+                    <p className="guitar-description">
+                      第 viiø7 级是半减七和弦：减三和弦加上小七度音。× 标记的弦要避开或消音。
+                    </p>
+                  )}
                   {chords[selected - 1].quality === 'dim' && (
                     <p className="guitar-description">
                       第 vii° 级用独立的减三和弦指法；× 标记的弦要避开或消音。
@@ -313,7 +331,7 @@ export function GuitarChordPractice() {
                 <p>
                   {waiting.length
                     ? waiting
-                        .map((d) => `${CHORD_DEGREES[d - 1]} · ${chords[d - 1].symbol}`)
+                        .map((d) => `${chords[d - 1].roman} · ${chords[d - 1].symbol}`)
                         .join('　 /　 ')
                     : round.length
                       ? '当前调没有待巩固的级数。可以同调再练，或换一个调。'
@@ -350,7 +368,7 @@ export function GuitarChordPractice() {
                 {degrees.map((degree, i) => (
                   <div key={`${i}-${degree}`}>
                     <span>{phase === 'connect' ? `${i + 1}` : `第 ${degree} 级`}</span>
-                    <strong>{CHORD_DEGREES[degree - 1]}</strong>
+                    <strong>{chords[degree - 1].roman}</strong>
                   </div>
                 ))}
               </div>
@@ -360,7 +378,7 @@ export function GuitarChordPractice() {
                     <div className="guitar-hints" role="status">
                       {degrees.map((degree, i) => (
                         <p key={i}>
-                          <b>{CHORD_DEGREES[degree - 1]}</b>　
+                          <b>{chords[degree - 1].roman}</b>　
                           {QUALITY_LABELS[chords[degree - 1].quality]}
                           {hints >= 2 && <> · {chords[degree - 1].symbol}</>}
                           {hints >= 3 && <> · {rootPosition(plan[degree - 1])}</>}
@@ -419,9 +437,27 @@ export function GuitarChordPractice() {
           <h3>这一组怎么练</h3>
           <p>调性固定，指法固定。先认级数，再找根音，最后让手落到位。</p>
           <div className="guitar-formula">
-            <span>大调和弦性质</span>
-            <p>大 · 小 · 小 · 大 · 大 · 小 · 减</p>
-            <small>I　ii　iii　IV　V　vi　vii°</small>
+            <span>大调{familyLabel}性质</span>
+            {seventh ? (
+              <dl className="guitar-quality-list">
+                {Array.from(new Set(chords.map((chord) => chord.quality))).map((quality) => (
+                  <div key={quality}>
+                    <dt>{QUALITY_LABELS[quality]}</dt>
+                    <dd>
+                      {chords
+                        .filter((chord) => chord.quality === quality)
+                        .map((chord) => chord.roman)
+                        .join(' · ')}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <>
+                <p>大 · 小 · 小 · 大 · 大 · 小 · 减</p>
+                <small>I　ii　iii　IV　V　vi　vii°</small>
+              </>
+            )}
           </div>
           <h3>{key} 大调的积累</h3>
           <dl className="guitar-key-stats">

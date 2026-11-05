@@ -14,12 +14,24 @@ import {
 } from '../src/lib/guitarChords';
 import type { ChordAttempt } from '../src/lib/guitarChords';
 import { midi } from '../src/lib/theory';
+import { CHORD_FAMILIES } from '../src/lib/chordHarmony';
+import type { ChordQuality } from '../src/lib/chordHarmony';
+
+const intervalsByQuality: Record<ChordQuality, number[]> = {
+  major: [0, 4, 7],
+  minor: [0, 3, 7],
+  dim: [0, 3, 6],
+  maj7: [0, 4, 7, 11],
+  m7: [0, 3, 7, 10],
+  '7': [0, 4, 7, 10],
+  m7b5: [0, 3, 6, 10],
+};
 
 describe('guitar chord harmony and fingerings', () => {
-  it.each(GUITAR_KEYS)(
-    'spells all seven triads in %s and produces exact chord tones on both root strings',
-    (key) => {
-      const chords = chordsInKey(key);
+  it.each(CHORD_FAMILIES.flatMap((family) => GUITAR_KEYS.map(([key]) => [key, family] as const)))(
+    'spells all seven chords in %s (%s) and produces exact chord tones on both root strings',
+    (key, family) => {
+      const chords = chordsInKey(key, family);
       expect(chords).toHaveLength(7);
       for (const chord of chords) {
         const expected = chord.tones.map((note) => midi(note) % 12).sort((a, b) => a - b);
@@ -30,10 +42,11 @@ describe('guitar chord harmony and fingerings', () => {
           );
           expect(played, `${key} ${chord.symbol}, root on ${rootString}`).toEqual(expected);
           const rootIndex = 6 - rootString;
+          expect(voicing.frets[rootIndex]).toBe(voicing.rootFret);
           expect((GUITAR_TUNING[rootIndex] + voicing.rootFret) % 12).toBe(midi(chord.root) % 12);
           expect(voicing.frets.slice(0, rootIndex).every((fret) => fret === null)).toBe(true);
           // Full major/minor shapes sound every string from the bass root through the first string.
-          if (chord.quality !== 'dim') {
+          if (chord.quality === 'major' || chord.quality === 'minor') {
             expect(
               voicing.frets.slice(rootIndex).every((fret) => fret !== null),
               `${key} ${chord.symbol}, incomplete shape on string ${rootString}`,
@@ -44,13 +57,7 @@ describe('guitar chord harmony and fingerings', () => {
               voicingNotes(voicing).map((note) => (midi(note) - midi(chord.root) + 120) % 12),
             ),
           ].sort((a, b) => a - b);
-          expect(intervals).toEqual(
-            chord.quality === 'major'
-              ? [0, 4, 7]
-              : chord.quality === 'minor'
-                ? [0, 3, 7]
-                : [0, 3, 6],
-          );
+          expect(intervals).toEqual(intervalsByQuality[chord.quality]);
           for (let string = 0; string < 6; string++) {
             const fret = voicing.frets[string],
               finger = voicing.fingers[string];
@@ -91,6 +98,21 @@ describe('guitar chord harmony and fingerings', () => {
       'D♯m',
       'E♯dim',
     ]);
+    expect(chordsInKey('F♯', 'seventh').map((c) => c.symbol)).toEqual([
+      'F♯maj7',
+      'G♯m7',
+      'A♯m7',
+      'Bmaj7',
+      'C♯7',
+      'D♯m7',
+      'E♯m7♭5',
+    ]);
+    expect(chordsInKey('F♯', 'seventh')[6].tones.map((n) => [n.letter, n.acc])).toEqual([
+      ['E', 1],
+      ['G', 1],
+      ['B', 0],
+      ['D', 1],
+    ]);
     expect(chordsInKey('D♭').map((c) => c.symbol)).toEqual([
       'D♭',
       'E♭m',
@@ -103,6 +125,26 @@ describe('guitar chord harmony and fingerings', () => {
   });
   it('covers every degree once in a recall round', () => {
     expect(recallQueue().flat().sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+  it('transposes the six-string Emaj7 shape for Imaj7 and IVmaj7 in every key', () => {
+    for (const [key] of GUITAR_KEYS) {
+      const [tonic, , , subdominant] = chordsInKey(key, 'seventh');
+      for (const chord of [tonic, subdominant]) {
+        const context = `${key} ${chord.roman}`;
+        for (const voicing of voicingsFor(chord).filter((shape) => shape.rootString === 6)) {
+          const r = voicing.rootFret;
+          expect(voicing.frets, context).toEqual([r, r + 2, r + 1, r + 1, r, r]);
+          const bass = GUITAR_TUNING[0] + r;
+          expect(
+            voicingNotes(voicing).map((note) => midi(note) - bass),
+            context,
+          ).toEqual([0, 7, 11, 16, 19, 24]);
+          expect(voicing.barre, context).toEqual(
+            r ? { fret: r, from: 0, to: 5, finger: 1 } : undefined,
+          );
+        }
+      }
+    }
   });
   it('includes Em on both strings and at both open E and the twelfth fret', () => {
     const em = chordsInKey('G')[5];

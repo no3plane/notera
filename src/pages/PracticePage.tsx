@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Heading } from '../components/Heading';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
@@ -6,7 +6,10 @@ import { FretboardPractice } from '../components/FretboardPractice';
 import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
 import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import {
+  chordFamilyForMode,
   findExercise,
+  isForwardChordMode,
+  isGuitarChordMode,
   KIND_LABELS,
   KINDS,
   MODE_DESCRIPTIONS,
@@ -14,6 +17,13 @@ import {
   TOPICS,
 } from '../lib/exercises';
 import { kindStats } from '../lib/practice';
+import {
+  CHORD_FAMILIES,
+  CHORD_FAMILY_LABELS,
+  readChordFamily,
+  saveChordFamily,
+} from '../lib/chordHarmony';
+import type { ChordFamily } from '../lib/chordHarmony';
 import { interval, name } from '../lib/theory';
 import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
@@ -30,6 +40,33 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     s = state.session,
     progress = state.progress;
   const mode = state.mode ?? 'interval';
+  const guitar = isGuitarChordMode(mode);
+  const family = chordFamilyForMode(mode);
+  const [preferredFamily, setPreferredFamily] = useState(readChordFamily);
+  const topic = TOPICS.find((t) => t.modes.includes(mode) || t.seventhModes?.includes(mode))!;
+  const topicModes = (family === 'seventh' && topic.seventhModes) || topic.modes;
+  const forward = isForwardChordMode(mode);
+  function changeFamily(value: ChordFamily) {
+    if (value === family || !topic.seventhModes) return;
+    const nextModes = value === 'seventh' ? topic.seventhModes : topic.modes;
+    setPreferredFamily(value);
+    saveChordFamily(value);
+    start('basic', nextModes[topicModes.indexOf(mode)]);
+  }
+  const familySwitch = family && (
+    <div className="segmented chord-family" role="group" aria-label="和弦类型">
+      {CHORD_FAMILIES.map((value) => (
+        <button
+          key={value}
+          className={family === value ? 'active' : ''}
+          aria-pressed={family === value}
+          onClick={() => changeFamily(value)}
+        >
+          {CHORD_FAMILY_LABELS[value]}
+        </button>
+      ))}
+    </div>
+  );
   const board = useRef<HTMLElement>(null);
   const mistakeCount =
     (mode === 'interval' ? progress.mistakes.length : 0) +
@@ -37,14 +74,12 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       const exercise = findExercise(id);
       return exercise && exercise.kind === mode;
     }).length;
-  const stats =
-    mode === 'guitar-chords' ? { total: 0, correct: 0, time: 0 } : kindStats(progress, mode);
-  const topic = TOPICS.find((t) => t.modes.includes(mode))!;
+  const stats = guitar ? { total: 0, correct: 0, time: 0 } : kindStats(progress, mode);
   const current = s.queue[s.index];
   const showNotation = current
     ? !current.exercise || current.exercise.kind === 'build-note'
     : mode === 'interval' || mode === 'build-note';
-  const hasDifficulty = !mode.startsWith('chord-');
+  const hasDifficulty = !family;
   const goal = s.queue.length,
     empty = !goal,
     done = s.index >= goal;
@@ -59,7 +94,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.ctrlKey ||
         e.altKey ||
         mode === 'fretboard' ||
-        mode === 'guitar-chords' ||
+        guitar ||
         empty ||
         done
       )
@@ -68,7 +103,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.preventDefault();
         dispatch({ type: 'degree', value: Number(e.key) });
       }
-      if (/^[1-7]$/.test(e.key) && !s.revealed && mode === 'chord-tones-forward') {
+      if (/^[1-7]$/.test(e.key) && !s.revealed && forward) {
         e.preventDefault();
         const exercise = s.queue[s.index].exercise!;
         const button = board.current?.querySelector<HTMLButtonElement>(
@@ -79,7 +114,10 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           dispatch({ type: 'choice', value: exercise.choices[Number(e.key) - 1] });
         }
       }
-      if (e.code === 'Space') {
+      if (
+        e.code === 'Space' &&
+        (!e.target.closest('button') || e.target.closest('.exercise-choices'))
+      ) {
         e.preventDefault();
         const q = s.queue[s.index];
         const notes = q.exercise
@@ -99,7 +137,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [dispatch, play, s, done, empty, mode]);
+  }, [dispatch, play, s, done, empty, guitar, forward]);
   const correct = s.results.filter((r) => r.correct).length;
   const average = s.results.length
     ? s.results.reduce((total, r) => total + r.time, 0) / s.results.length / 1000
@@ -107,15 +145,15 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   return (
     <>
       <Heading
-        eyebrow={mode === 'guitar-chords' ? '吉他练习室' : 'PRACTICE ROOM'}
+        eyebrow={guitar ? '吉他练习室' : 'PRACTICE ROOM'}
         description={
-          mode === 'guitar-chords'
+          guitar
             ? '一组一个大调，用第五、六弦根音的固定指法，把级数练到手上。'
             : '音程、指板、和弦，逐项练习；拿起吉他，把乐理练到手上。'
         }
         side="先练准确，再练熟练"
       >
-        {mode === 'guitar-chords' ? '实琴和弦' : '乐理练习'}
+        {guitar ? '实琴和弦' : '乐理练习'}
       </Heading>
       <div className="topic-tabs" role="group" aria-label="练习专题">
         {TOPICS.map((t, i) => (
@@ -124,7 +162,8 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
             className={topic === t ? 'active' : ''}
             aria-pressed={topic === t}
             onClick={() => {
-              if (topic !== t) start('basic', t.modes[0]);
+              if (topic !== t)
+                start('basic', ((preferredFamily === 'seventh' && t.seventhModes) || t.modes)[0]);
             }}
           >
             <small>0{i + 1}</small>
@@ -132,38 +171,41 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </button>
         ))}
       </div>
-      {mode !== 'fretboard' && mode !== 'guitar-chords' && (
+      {mode !== 'fretboard' && !guitar && (
         <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
-          <div
-            className={topic.modes.length > 1 ? 'segmented' : 'single-mode'}
-            role="group"
-            aria-label="练习题型"
-          >
-            {topic.modes.length === 1 ? (
-              <span>{MODE_LABELS[mode]}</span>
-            ) : (
-              topic.modes.map((value) => (
-                <button
-                  key={value}
-                  className={mode === value ? 'active' : ''}
-                  aria-pressed={mode === value}
-                  onClick={() => {
-                    if (mode !== value) start('basic', value);
-                  }}
-                >
-                  {MODE_LABELS[value]}
-                </button>
-              ))
-            )}
+          <div className="practice-mode-groups">
+            {familySwitch}
+            <div
+              className={topicModes.length > 1 ? 'segmented' : 'single-mode'}
+              role="group"
+              aria-label="练习题型"
+            >
+              {topicModes.length === 1 ? (
+                <span>{MODE_LABELS[mode]}</span>
+              ) : (
+                topicModes.map((value) => (
+                  <button
+                    key={value}
+                    className={mode === value ? 'active' : ''}
+                    aria-pressed={mode === value}
+                    onClick={() => {
+                      if (mode !== value) start('basic', value);
+                    }}
+                  >
+                    {MODE_LABELS[value]}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </PracticeModeToolbar>
       )}
-      {mode === 'guitar-chords' ? (
-        <GuitarChordPractice />
+      {guitar ? (
+        <GuitarChordPractice key={family} family={family} familySwitch={familySwitch} />
       ) : mode === 'fretboard' ? (
         <FretboardPractice controller={controller} />
       ) : (
-        <div className="practice-layout">
+        <div className={`practice-layout${family ? ' chord-theory' : ''}`}>
           <section ref={board} className="practice-board" aria-label={`${MODE_LABELS[mode]}练习`}>
             <div className="practice-bar">
               <span>
@@ -247,8 +289,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </section>
           <aside className="practice-side">
             <h2>
-              {MODE_LABELS[mode]}{' '}
-              <small style={{ fontSize: 9, color: '#a0aa91' }}>· 本机记录</small>
+              {MODE_LABELS[mode]} <small className="practice-local-label">· 本机记录</small>
             </h2>
             <div className="stats">
               <div className="stat">
@@ -275,8 +316,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
               </div>
             </div>
             <div className="kind-progress">
-              <h3>分项进度</h3>
-              {KINDS.map((kind) => {
+              <h3>分项进度{family ? ` · ${CHORD_FAMILY_LABELS[family]}` : ''}</h3>
+              {KINDS.filter((kind) => {
+                const kindFamily = chordFamilyForMode(kind);
+                return !kindFamily || kindFamily === (family ?? 'triad');
+              }).map((kind) => {
                 const part = kindStats(progress, kind);
                 const recalls =
                   kind === 'fretboard'
@@ -354,7 +398,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                 )}
             </div>
             <div className="shortcut">
-              {mode === 'chord-tones-forward' ? (
+              {forward ? (
                 <>
                   <kbd>1</kbd> — <kbd>7</kbd> 选择构成音，再按取消
                   <br />

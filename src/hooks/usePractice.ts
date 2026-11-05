@@ -4,14 +4,15 @@ import { createSession, practiceReducer } from '../lib/practice';
 import type { PracticeState } from '../lib/practice';
 import type { Level } from '../lib/types';
 import type { Mode } from '../lib/exercises';
+import { GUITAR_CHORD_MODES } from '../lib/exercises';
+import { readChordFamily } from '../lib/chordHarmony';
 
 export function usePractice(notify: (message: string) => void) {
   const [state, dispatch] = useReducer(practiceReducer, undefined, (): PracticeState => {
     const progress = readProgress() ?? emptyProgress();
+    const entry = new URLSearchParams(location.search).get('practice');
     const mode: Mode =
-      new URLSearchParams(location.search).get('practice') === 'guitar-chords'
-        ? 'guitar-chords'
-        : 'interval';
+      entry === GUITAR_CHORD_MODES.triad ? GUITAR_CHORD_MODES[readChordFamily()] : 'interval';
     return {
       level: 'basic',
       mode,

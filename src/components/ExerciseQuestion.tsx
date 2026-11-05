@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Dispatch } from 'react';
 import type { Session, PracticeAction } from '../lib/practice';
 import type { Note, NoteFormat } from '../lib/types';
-import { KIND_LABELS } from '../lib/exercises';
+import { isForwardChordMode, KIND_LABELS } from '../lib/exercises';
 import { NoteDisplay } from './NoteDisplay';
 import { Icon } from './Icon';
 
@@ -24,8 +24,10 @@ export function ExerciseQuestion({
   useEffect(() => {
     if (s.revealed) feedback.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [s.revealed]);
-  const multi = exercise.answer.length > 1;
-  const keyboardChoices = exercise.kind === 'chord-tones-forward';
+  const count = exercise.answer.length;
+  const multi = count > 1;
+  const choiceLabel = multi ? `选择${count === 4 ? '四' : '三'}个构成音` : '选择答案';
+  const keyboardChoices = isForwardChordMode(exercise.kind);
   const audible = s.revealed ? exercise.notes : exercise.listenBefore;
   return (
     <>
@@ -54,12 +56,12 @@ export function ExerciseQuestion({
         </div>
       )}
       <div className="answer-title">
-        {multi ? `选择三个构成音 · 已选 ${selected.length} / 3` : '选择答案'}
+        {multi ? `${choiceLabel} · 已选 ${selected.length} / ${count}` : choiceLabel}
       </div>
       <div
         className={`exercise-choices ${exercise.kind === 'build-note' ? 'note-choices' : ''}`}
         role="group"
-        aria-label={multi ? '选择三个构成音' : '选择答案'}
+        aria-label={choiceLabel}
       >
         {exercise.choices.map((choice) => {
           const chosen = selected.includes(choice);
@@ -71,7 +73,7 @@ export function ExerciseQuestion({
               aria-pressed={chosen}
               aria-label={choice}
               aria-keyshortcuts={keyboardChoices ? choice : undefined}
-              disabled={s.revealed || (multi && selected.length === 3 && !chosen)}
+              disabled={s.revealed || (multi && selected.length === count && !chosen)}
               onClick={() => dispatch({ type: 'choice', value: choice })}
             >
               {choice}

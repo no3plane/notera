@@ -96,3 +96,14 @@ export function makeQuestion(level: Level = 'basic'): {
     result: interval({ letter: 'C', acc: 0, octave: 3 }, { letter: 'G', acc: 1, octave: 3 }),
   };
 }
+export function transpose(note: Note, degree: number, semitones: number, direction: 1 | -1): Note {
+  const targetPosition = position(note) + direction * (degree - 1);
+  const letterIndex = ((targetPosition % 7) + 7) % 7;
+  const octave = Math.floor(targetPosition / 7);
+  const targetMidi = midi(note) + direction * semitones;
+  return {
+    letter: LETTERS[letterIndex],
+    octave,
+    acc: targetMidi - ((octave + 1) * 12 + NATURAL[letterIndex]),
+  };
+}
