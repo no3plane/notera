@@ -243,7 +243,8 @@ body:has(.guitar-practice) .topic-tabs button {
   stroke: var(--white);
   stroke-width: 1.5;
 }
-.chord-axis {
+.chord-axis,
+.chord-degree {
   fill: var(--guitar-secondary);
   font-size: 12px;
 }

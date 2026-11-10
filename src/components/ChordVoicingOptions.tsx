@@ -43,8 +43,10 @@ export function ChordVoicingOptions({
         );
       })}
       <p className="guitar-options-legend">
-        根音范围：空弦至第 12 品 · 从左到右 6 → 1 弦<br />
-        绿色为根音 · 数字为手指 · × 不弹 / ○ 空弦
+        根音范围：空弦至第 12 品<br />
+        下排从 6 → 1 弦标出音级 · R 为根音
+        <br />
+        圆点内数字为指法 · × 不弹 / ○ 空弦 · 粗线为横按
       </p>
     </div>
   );

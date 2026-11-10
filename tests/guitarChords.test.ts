@@ -8,6 +8,7 @@ import {
   readGuitarProgress,
   recallQueue,
   recommendedVoicings,
+  voicingDegrees,
   voicingFor,
   voicingsFor,
   voicingNotes,
@@ -107,11 +108,20 @@ describe('guitar chord harmony and fingerings', () => {
       'D♯m7',
       'E♯m7♭5',
     ]);
-    expect(chordsInKey('F♯', 'seventh')[6].tones.map((n) => [n.letter, n.acc])).toEqual([
+    const halfDiminished = chordsInKey('F♯', 'seventh')[6];
+    expect(halfDiminished.tones.map((n) => [n.letter, n.acc])).toEqual([
       ['E', 1],
       ['G', 1],
       ['B', 0],
       ['D', 1],
+    ]);
+    expect(voicingDegrees(voicingFor(halfDiminished, 6), halfDiminished.tones)).toEqual([
+      'R',
+      '×',
+      '♭7',
+      '♭3',
+      '♭5',
+      '×',
     ]);
     expect(chordsInKey('D♭').map((c) => c.symbol)).toEqual([
       'D♭',

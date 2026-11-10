@@ -50,6 +50,16 @@ it.each([
     const sus2Diagram =
       root === 'E' ? /^Esus2 指法：.*第 3 弦不弹.*第 1 弦第 2 品$/ : /^Asus2 指法/;
     expect(screen.getByRole('img', { name: sus2Diagram })).toBeTruthy();
+    expect(
+      screen.getAllByRole('img').map((diagram) => {
+        const labels = diagram.querySelectorAll('.chord-degree');
+        return Array.from(labels, (label) => label.textContent).join(' ');
+      }),
+    ).toEqual(
+      root === 'E'
+        ? ['R 5 R × 5 2', 'R 5 R 3 5 R', 'R 5 R 4 5 R']
+        : ['× R 5 R 2 5', '× R 5 R 3 5', '× R 5 R 4 5'],
+    );
     fireEvent.click(screen.getByRole('button', { name: '和弦连接' }));
     expect(
       within(screen.getByRole('table', { name: '四小节节拍谱' }))

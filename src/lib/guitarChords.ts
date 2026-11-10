@@ -1,7 +1,7 @@
 import { shuffle } from './exercises';
 import { MAJOR_KEYS as GUITAR_KEYS, majorKeyChords } from './chordHarmony';
 import type { ChordFamily, DiatonicChord, SeventhQuality } from './chordHarmony';
-import { midi } from './theory';
+import { interval, midi } from './theory';
 import type { Note } from './types';
 
 export { GUITAR_KEYS };
@@ -169,6 +169,19 @@ export function recommendedVoicings(chords: GuitarChord[]): ChordVoicing[] {
 }
 export function rootPosition(voicing: ChordVoicing) {
   return `第${['四', '五', '六'][voicing.rootString - 4]}弦${voicing.rootFret ? `第 ${voicing.rootFret} 品` : '空弦'}`;
+}
+export function voicingDegrees(voicing: ChordVoicing, tones: readonly Note[]) {
+  const [root] = tones;
+  const degrees = new Map(
+    tones.map((tone) => {
+      const { degree, delta } = interval(root, tone);
+      const accidental = delta < 0 ? '♭'.repeat(-delta) : '♯'.repeat(delta);
+      return [midi(tone) % 12, degree === 1 ? 'R' : `${accidental}${degree}`] as const;
+    }),
+  );
+  return voicing.frets.map((fret, i) =>
+    fret === null ? '×' : (degrees.get((GUITAR_TUNING[i] + fret) % 12) ?? '—'),
+  );
 }
 export function voicingNotes(voicing: ChordVoicing): Note[] {
   const spellings: Note[] = [

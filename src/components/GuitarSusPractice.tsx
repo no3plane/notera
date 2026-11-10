@@ -248,7 +248,9 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
                     ))}
                   </div>
                   <p className="guitar-sus-legend">
-                    从左到右 6 → 1 弦 · 绿线标出变化弦，绿点标出根音 · 数字为手指 · × 不弹 / ○ 空弦
+                    下排音级 6 → 1 弦 · R 为根音（1）
+                    <br />
+                    绿线为变化弦 · 圆内标指法 · × 不弹 · ○ 空弦
                   </p>
                   {audioError && <p role="status">{audioError}</p>}
                 </>
