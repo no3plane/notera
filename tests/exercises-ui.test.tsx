@@ -13,6 +13,36 @@ function currentExercise() {
 }
 
 describe('new exercise flows', () => {
+  it('opens the seven-degree overview before the first question and safely switches chord families', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '挂留和弦' }));
+    const mode = '这个级数能挂什么？';
+    await user.click(screen.getByRole('button', { name: mode }));
+    const table = within(screen.getByRole('table', { name: /C 大调/ }));
+    expect(table.getAllByRole('row')).toHaveLength(8);
+    expect(table.getByRole('cell', { name: /B 到调内的 F 是减五度/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '确认答案 ↗' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '开始练习 · 7 题' }));
+    expect(screen.getByText('第 1 / 7 题')).toBeTruthy();
+    const question = currentExercise();
+    expect(question.diatonicSus?.key).toBe('C');
+    const answers = within(screen.getByRole('group', { name: '选择答案' }));
+    await user.click(answers.getByRole('button', { name: question.answer[0] }));
+    await user.click(screen.getByRole('button', { name: '确认答案 ↗' }));
+    expect(screen.getByText(/✓ 回答正确/)).toBeTruthy();
+    expect(readProgress()?.byKind?.['chord-sus-diatonic']?.correct).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: '七和弦' }));
+    expect(screen.getByRole('button', { name: '级数与和弦', pressed: true })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '挂留和弦' }));
+    await user.click(screen.getByRole('button', { name: mode }));
+    expect(screen.getByRole('table', { name: /C 大调/ })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '开始练习 · 7 题' }));
+    expect(currentExercise().diatonicSus?.key).not.toBe('C');
+  });
   it('switches the same prompt type to sevenths, accepts four distinct tones, and remembers the selection', async () => {
     const user = userEvent.setup();
     const view = render(<App />);

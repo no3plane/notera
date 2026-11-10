@@ -2,6 +2,7 @@ import { interval, makeQuestion } from './theory';
 import { emptyProgress, pairKey } from './progress';
 import type { Level, NotePair, Progress, Quality } from './types';
 import {
+  CHORD_MODES,
   exercisesFor,
   findExercise,
   isForwardChordMode,
@@ -10,6 +11,8 @@ import {
   takeExercise,
 } from './exercises';
 import type { Exercise, ExerciseKind, Mode } from './exercises';
+import { MAJOR_KEYS } from './chordHarmony';
+import { DIATONIC_SUS_MODE } from './diatonicSus';
 import { validMemoryAttempt } from './fretboardMemory';
 import type { MemoryAttempt, RootString } from './fretboardMemory';
 import { progressKey, validFretAttempt } from './fretboard';
@@ -28,9 +31,9 @@ export function exerciseQuestion(exercise: Exercise, level: Level = 'mixed'): Qu
   const a = exercise.notes[0] ?? fallback,
     b = exercise.notes[1] ?? a;
   const choices =
-    level !== 'basic'
-      ? exercise.choices
-      : exercise.kind === 'build-note'
+    exercise.kind === CHORD_MODES.sus[0] || exercise.kind === CHORD_MODES.sus[2]
+      ? shuffle(exercise.choices)
+      : exercise.kind === 'build-note' && level === 'basic'
         ? exercise.choices.filter((choice) => /^[A-G]$/.test(choice))
         : exercise.choices;
   return { a, b, result: interval(a, b), exercise: { ...exercise, choices } };
@@ -84,16 +87,44 @@ export type PracticeAction =
   | { type: 'reset'; session: Session }
   | { type: 'restore'; session: Session };
 
+function diatonicSusQueue(
+  level: Level,
+  mistakeIds: string[],
+  progress: Pick<Progress, 'exerciseHistory' | 'byKind'>,
+): Question[] {
+  const mistakes = mistakeIds.flatMap((id) => findExercise(id)?.diatonicSus ?? []);
+  if (level === 'review' && !mistakes.length) return [];
+  const previous = progress.exerciseHistory?.find((entry) => findExercise(entry.id)?.diatonicSus);
+  const previousKey = previous && findExercise(previous.id)?.diatonicSus?.key;
+  const excluded = new Set(mistakes.map(({ key }) => key));
+  if (previousKey) excluded.add(previousKey);
+  const fresh = !excluded.size && !progress.byKind?.[DIATONIC_SUS_MODE]?.total;
+  const candidates = MAJOR_KEYS.filter(([key]) => !excluded.has(key));
+  const key = fresh ? 'C' : (shuffle(candidates)[0]?.[0] ?? 'C');
+  const pendingDegrees = new Set(mistakes.map(({ degree }) => degree));
+  const pool = shuffle(
+    exercisesFor(DIATONIC_SUS_MODE, level).filter((exercise) => exercise.diatonicSus?.key === key),
+  );
+  const isPending = (exercise: Exercise) =>
+    exercise.diatonicSus !== undefined && pendingDegrees.has(exercise.diatonicSus.degree);
+  const priority = pool.filter(isPending);
+  const other = level === 'review' ? [] : pool.filter((exercise) => !isPending(exercise));
+  return [...priority, ...other].map((exercise) => exerciseQuestion(exercise, level));
+}
+
 export function createSession(
   level: Level,
   mistakes: NotePair[],
   now = performance.now(),
   mode: Mode = 'interval',
   exerciseMistakes: string[] = [],
+  progress: Pick<Progress, 'exerciseHistory' | 'byKind'> = {},
 ): Session {
   let queue: Question[];
   if (mode === 'fretboard' || isGuitarChordMode(mode)) {
     queue = []; // Interactive guitar modes own their sessions and records.
+  } else if (mode === DIATONIC_SUS_MODE) {
+    queue = diatonicSusQueue(level, exerciseMistakes, progress);
   } else if (level === 'review') {
     const shuffled = [...mistakes];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -123,15 +154,16 @@ export function createSession(
         }
       }
       const exercise = takeExercise(pool, queue.length);
-      const q =
+      const q: Question | null =
         mode === 'interval'
           ? makeQuestion(level)
           : exercise
             ? exerciseQuestion(exercise, level)
             : null;
       if (!q) break;
-      if (!seen.has(questionKey(q))) {
-        seen.add(questionKey(q));
+      const key = q.exercise?.kind === CHORD_MODES.sus[2] ? q.exercise.answer[0] : questionKey(q);
+      if (!seen.has(key)) {
+        seen.add(key);
         queue.push(q);
       }
     }
@@ -280,11 +312,18 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
             : state.progress.mistakes;
       const exerciseMistakes = [...(state.progress.exerciseMistakes ?? [])];
       if (exercise) {
+        const eligibility = exercise.diatonicSus;
+        const index = exerciseMistakes.findIndex((id) =>
+          eligibility
+            ? findExercise(id)?.diatonicSus?.degree === eligibility.degree
+            : id === exercise.id,
+        );
         if (correct && !s.hint) {
-          const index = exerciseMistakes.indexOf(exercise.id);
           if (index >= 0) exerciseMistakes.splice(index, 1);
-        } else if (!correct && !exerciseMistakes.includes(exercise.id))
-          exerciseMistakes.push(exercise.id);
+        } else if (!correct) {
+          if (index < 0) exerciseMistakes.push(exercise.id);
+          else if (eligibility) exerciseMistakes[index] = exercise.id;
+        }
       }
       const kind = exercise?.kind ?? 'interval';
       const previous = kindStats(state.progress, kind);

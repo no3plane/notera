@@ -1,21 +1,32 @@
 import { interval, LETTERS, name, transpose } from './theory';
 import {
-  CHORD_FAMILIES,
   CHORD_FAMILY_LABELS,
   majorKeyChords,
+  SAME_ROOT_FORMULAS,
+  PRACTICE_CHORD_FAMILIES,
   QUALITY_LABELS,
+  sameRootChord,
+  SUS_TYPES,
 } from './chordHarmony';
-import type { ChordFamily, ChordQuality } from './chordHarmony';
+import type { ChordFamily, ChordQuality, MajorKey, PracticeChordFamily } from './chordHarmony';
+import { DIATONIC_SUS_CHOICES, DIATONIC_SUS_LESSONS, DIATONIC_SUS_MODE } from './diatonicSus';
 import { notation } from './notation';
 import type { Level, Note } from './types';
 
 export const CHORD_MODES = {
   triad: ['chord-degree', 'chord-tones-forward', 'chord-tones-reverse'],
   seventh: ['chord-seventh-degree', 'chord-seventh-tones-forward', 'chord-seventh-tones-reverse'],
+  sus: [
+    'chord-sus-change',
+    'chord-sus-tones-forward',
+    'chord-sus-tones-reverse',
+    DIATONIC_SUS_MODE,
+  ],
 } as const;
 export const GUITAR_CHORD_MODES = {
   triad: 'guitar-chords',
   seventh: 'guitar-seventh-chords',
+  sus: 'guitar-sus-chords',
 } as const;
 
 export const KINDS = [
@@ -24,16 +35,17 @@ export const KINDS = [
   'fretboard',
   ...CHORD_MODES.triad,
   ...CHORD_MODES.seventh,
+  ...CHORD_MODES.sus,
 ] as const;
 export type ExerciseKind = (typeof KINDS)[number];
-export type GuitarChordMode = (typeof GUITAR_CHORD_MODES)[ChordFamily];
+export type GuitarChordMode = (typeof GUITAR_CHORD_MODES)[PracticeChordFamily];
 export type Mode = ExerciseKind | GuitarChordMode;
 export const isGuitarChordMode = (mode: Mode): mode is GuitarChordMode =>
-  mode === GUITAR_CHORD_MODES.triad || mode === GUITAR_CHORD_MODES.seventh;
+  Object.values(GUITAR_CHORD_MODES).some((guitarMode) => guitarMode === mode);
 export const isForwardChordMode = (mode: Mode) =>
   mode === CHORD_MODES.triad[1] || mode === CHORD_MODES.seventh[1];
-export const chordFamilyForMode = (mode: Mode): ChordFamily | undefined =>
-  CHORD_FAMILIES.find(
+export const chordFamilyForMode = (mode: Mode): PracticeChordFamily | undefined =>
+  PRACTICE_CHORD_FAMILIES.find(
     (family) =>
       mode === GUITAR_CHORD_MODES[family] || CHORD_MODES[family].some((kind) => mode === kind),
   );
@@ -50,15 +62,28 @@ export const KIND_LABELS: Record<Mode, string> = {
   'chord-seventh-tones-forward': '和弦名 → 构成音',
   'chord-seventh-tones-reverse': '构成音 → 和弦名',
   'guitar-seventh-chords': '实琴和弦',
+  'chord-sus-change': '换一个音',
+  'chord-sus-tones-forward': '和弦名 → 构成音',
+  'chord-sus-tones-reverse': '根音＋构成音 → 和弦名',
+  [DIATONIC_SUS_MODE]: '这个级数能挂什么？',
+  'guitar-sus-chords': '实琴和弦',
 };
-export const TOPICS: { label: string; modes: readonly Mode[]; seventhModes?: readonly Mode[] }[] = [
+type Topic = { label: string } & (
+  { modes: readonly Mode[] } | { chordModes: Record<PracticeChordFamily, readonly Mode[]> }
+);
+export const modesForTopic = (topic: Topic, family: PracticeChordFamily) =>
+  'chordModes' in topic ? topic.chordModes[family] : topic.modes;
+export const TOPICS: Topic[] = [
   { label: '音程推算', modes: ['interval', 'build-note'] },
   { label: '指板定位', modes: ['fretboard'] },
-  { label: '和弦对应', modes: CHORD_MODES.triad, seventhModes: CHORD_MODES.seventh },
+  { label: '和弦对应', chordModes: CHORD_MODES },
   {
     label: '实琴和弦',
-    modes: [GUITAR_CHORD_MODES.triad],
-    seventhModes: [GUITAR_CHORD_MODES.seventh],
+    chordModes: {
+      triad: [GUITAR_CHORD_MODES.triad],
+      seventh: [GUITAR_CHORD_MODES.seventh],
+      sus: [GUITAR_CHORD_MODES.sus],
+    },
   },
 ];
 export const MODE_LABELS = KIND_LABELS;
@@ -74,6 +99,11 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'chord-seventh-tones-forward': '给出 C 大调顺阶七和弦名，用简谱选出四个构成音，选择顺序不限。',
   'chord-seventh-tones-reverse': '给出顺序随机的四个简谱音，判断它们组成的 C 大调顺阶七和弦。',
   'guitar-seventh-chords': '一组只练一个大调，用第五、六弦根音的指法练七个顺阶七和弦。',
+  'chord-sus-change': '保留根音和五音，把三音换成二音或四音，再练习换回去。',
+  'chord-sus-tones-forward': '按音名选出三个构成音。sus2 用二音，sus4 用四音。',
+  'chord-sus-tones-reverse': '根据给定的根音判断和弦，三个构成音的顺序会打乱。',
+  [DIATONIC_SUS_MODE]: '先看大调七个级数的总览，再判断只用调内音能组成哪种挂留和弦。',
+  'guitar-sus-chords': '从第六弦 E 型和第五弦 A 型出发，练习挂留和弦的换音与解决。',
 };
 export interface Exercise {
   id: string;
@@ -87,6 +117,7 @@ export interface Exercise {
   notes: Note[];
   listenBefore?: Note[];
   advanced?: boolean;
+  diatonicSus?: { key: MajorKey; degree: number };
 }
 export { transpose } from './theory';
 export function shuffle<T>(items: readonly T[]): T[] {
@@ -226,6 +257,99 @@ function chordExercises(family: ChordFamily): Exercise[] {
     return [...degreeQuestions, forward, ...reverseQuestions];
   });
 }
+
+function susExercises(): Exercise[] {
+  const [changeKind, forwardKind, reverseKind] = CHORD_MODES.sus;
+  const roots: Note[] = LETTERS.map((letter) => ({ letter, acc: 0, octave: 3 }));
+  const availableTones = new Set(
+    roots.flatMap((root) =>
+      SUS_TYPES.flatMap((type) => sameRootChord(root, type).tones.map((note) => name(note, false))),
+    ),
+  );
+  const toneChoices = noteChoices.filter((tone) => availableTones.has(tone));
+  return roots.flatMap((root) => {
+    const major = sameRootChord(root, 'major');
+    const rootName = major.symbol;
+    const minorThird = name(transpose(root, 3, 3, 1), false);
+    return SUS_TYPES.flatMap((type) => {
+      const sus = sameRootChord(root, type);
+      const other = sameRootChord(root, type === 'sus2' ? 'sus4' : 'sus2');
+      const tones = sus.tones.map((note) => name(note, false));
+      const third = name(major.tones[1], false);
+      const suspended = tones[1];
+      const formula = SAME_ROOT_FORMULAS[type];
+      const intervalName = type === 'sus2' ? '大二度' : '纯四度';
+      const explanation = `${sus.symbol} = ${tones.join(' · ')}。以 ${rootName} 为 1，构成是 ${formula}。和 ${major.symbol} 相比，根音与五音相同，三音 ${third} 换成了 ${suspended}。`;
+      const forward: Exercise = {
+        id: `sus:tones:${sus.symbol}`,
+        kind: forwardKind,
+        title: `${sus.symbol} 的三个构成音是什么？`,
+        context: '挂留和弦 · 按音名作答，选择顺序不限',
+        answer: tones,
+        choices: toneChoices,
+        hint: `保留根音 ${rootName} 和纯五度音，再找根音上方的${intervalName}音。`,
+        explanation,
+        notes: sus.tones,
+      };
+      const reverseQuestions: Exercise[] = permutations([0, 1, 2]).map((order) => {
+        const notes = order.map((i) => sus.tones[i]);
+        return {
+          id: `sus:name:${sus.symbol}:${order.join('')}`,
+          kind: reverseKind,
+          title: `根音是 ${rootName}，${notes.map((note) => name(note, false)).join(' · ')} 组成什么和弦？`,
+          context: '挂留和弦 · 按题目指定的根音判断',
+          answer: [sus.symbol],
+          choices: [major.symbol, `${rootName}m`, `${rootName}sus2`, `${rootName}sus4`],
+          hint: '去掉题目给定的根音和它的五音，判断剩下的音是二音、三音还是四音。',
+          explanation,
+          notes,
+          listenBefore: notes,
+        };
+      });
+      const changeQuestions: Exercise[] = [false, true].map((resolve) => {
+        const [from, to] = resolve ? [sus, major] : [major, sus];
+        const [oldNote, newNote] = resolve ? [suspended, third] : [third, suspended];
+        const alternate = resolve ? minorThird : name(other.tones[1], false);
+        const answer = `${oldNote} → ${newNote}`;
+        return {
+          id: `sus:change:${from.symbol}:${to.symbol}`,
+          kind: changeKind,
+          title: `把 ${from.symbol} 变成 ${to.symbol}，哪个音要换成什么？`,
+          context: `${from.symbol} 的构成音 · ${from.tones.map((note) => name(note, false)).join(' · ')}`,
+          answer: [answer],
+          choices: [
+            answer,
+            `${oldNote} → ${alternate}`,
+            `${rootName} → ${newNote}`,
+            `${tones[2]} → ${newNote}`,
+          ],
+          hint: '根音与五音都保留，只比较这两个和弦的中间音。',
+          explanation: `保留 ${rootName} 和 ${tones[2]}，把 ${oldNote} 换成 ${newNote}。${to.symbol} 的构成音是 ${to.tones.map((note) => name(note, false)).join(' · ')}。`,
+          notes: to.tones,
+        };
+      });
+      return [forward, ...reverseQuestions, ...changeQuestions];
+    });
+  });
+}
+
+function diatonicSusExercises(): Exercise[] {
+  return DIATONIC_SUS_LESSONS.flatMap(({ key, scale, rows }) =>
+    rows.map((row) => ({
+      id: `sus:diatonic:${key}:${row.degree}`,
+      kind: DIATONIC_SUS_MODE,
+      title: `${key} 大调的 ${row.roman}（${row.symbol}），可以挂哪一种？`,
+      context: `只用 ${key} 大调的音 · 标准 sus2 / sus4`,
+      answer: [row.answer],
+      choices: [...DIATONIC_SUS_CHOICES],
+      hint: `${key} 大调音阶是 ${scale.join(' · ')}。从和弦根音算起，先找纯五度，再找大二度和纯四度。`,
+      explanation: row.explanation,
+      notes: [],
+      diatonicSus: { key, degree: row.degree },
+    })),
+  );
+}
+
 let cached: Exercise[] | undefined;
 export function exerciseBank(): Exercise[] {
   if (cached) return cached;
@@ -262,7 +386,12 @@ export function exerciseBank(): Exercise[] {
           });
         }
     }
-  bank.push(...CHORD_FAMILIES.flatMap(chordExercises));
+  bank.push(
+    ...chordExercises('triad'),
+    ...chordExercises('seventh'),
+    ...susExercises(),
+    ...diatonicSusExercises(),
+  );
   cached = bank;
   return bank;
 }

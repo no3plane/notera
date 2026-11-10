@@ -223,6 +223,9 @@ body:has(.guitar-practice) .topic-tabs button {
   stroke: var(--guitar-wire);
   stroke-width: 1;
 }
+.chord-moving-string {
+  stroke: var(--green);
+}
 .chord-nut {
   stroke: var(--guitar-dot);
   stroke-width: 4;
@@ -542,6 +545,191 @@ body:has(.guitar-practice) .topic-tabs button {
   display: block;
   margin: 0 auto;
   font-size: 12px;
+}
+.guitar-sus-voicings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 96px), 1fr));
+  gap: 12px;
+}
+.guitar-sus .chord-family button {
+  font-size: 12px;
+  padding-inline: 8px;
+}
+.guitar-sus .guitar-scope label {
+  gap: 8px;
+}
+.guitar-sus .guitar-scope select {
+  padding-inline: 10px 24px;
+}
+.guitar-sus-views {
+  margin: 20px 0 14px;
+  width: fit-content;
+}
+.guitar-sus-views button {
+  font-size: 12px;
+}
+.guitar-sus-views button.active {
+  box-shadow: none;
+}
+.guitar-sus-views button:not(.active) {
+  color: var(--guitar-secondary);
+}
+.guitar-loop-controls,
+.guitar-loop-controls label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.guitar-loop-controls {
+  justify-content: space-between;
+  margin: 16px 0;
+}
+.guitar-connection {
+  max-width: 900px;
+  scroll-margin-top: 12px;
+}
+.guitar-loop-controls select {
+  border: 1px solid var(--guitar-control);
+  background: var(--white);
+  color: var(--ink);
+  padding: 6px 16px 6px 10px;
+}
+.guitar-loop-status {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--guitar-secondary);
+}
+.guitar-loop-score {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.guitar-loop-score th,
+.guitar-loop-score td {
+  border: 1px solid var(--line);
+  padding: 4px 2px;
+  line-height: 1.25;
+}
+.guitar-loop-score thead th {
+  height: 32px;
+  font-size: 13px;
+  color: var(--guitar-secondary);
+  font-weight: 500;
+}
+.guitar-loop-score thead th:first-child {
+  width: 21%;
+}
+.guitar-loop-score tbody th {
+  text-align: left;
+  padding-inline-start: 8px;
+  border-inline-start: 3px solid var(--line);
+}
+.guitar-loop-score tbody td {
+  height: 58px;
+}
+.guitar-loop-score tbody th small {
+  margin-inline-end: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--guitar-secondary);
+}
+.guitar-loop-score tr[data-target] th {
+  border-inline-start-color: var(--green);
+  color: var(--green-dark);
+}
+.guitar-loop-score tr[data-current] th,
+.guitar-loop-score td[data-suspended] {
+  background: var(--guitar-current);
+  color: var(--green-dark);
+}
+.guitar-loop-score [aria-current='step'] {
+  background: var(--guitar-primary);
+  color: var(--white);
+}
+.guitar-loop-score strong {
+  font-size: clamp(13px, 2vw, 17px);
+  font-weight: 600;
+}
+.guitar-loop-score td small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+.guitar-loop-key {
+  margin: 8px 0 0;
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-loop-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.guitar-loop-review fieldset {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+}
+.guitar-loop-review label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 6px;
+  margin-inline-end: 14px;
+}
+.guitar-loop-review input {
+  accent-color: var(--green);
+}
+@media (max-width: 600px) {
+  .page-enter:has(.guitar-connection[data-playing]) > :is(.page-heading, .topic-tabs),
+  .guitar-sus:has(.guitar-connection[data-playing]) > :is(.guitar-scope, .guitar-sus-views),
+  .guitar-connection[data-playing] .guitar-loop-controls label {
+    display: none;
+  }
+  .guitar-connection[data-playing] .guitar-loop-controls {
+    justify-content: flex-end;
+  }
+}
+.guitar-sus-shape {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  text-align: center;
+}
+.guitar-sus-shape h3 {
+  font-size: 19px;
+  font-weight: 500;
+  margin: 0;
+}
+.guitar-sus-shape p,
+.guitar-sus-legend {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+.guitar-sus-shape .chord-diagram svg {
+  max-width: 160px;
+}
+.guitar-sus-shape p {
+  margin: 3px 0;
+}
+.guitar-sus-shape figcaption {
+  display: none;
+}
+.guitar-sus-legend {
+  margin-top: 8px;
+  text-align: center;
+}
+.guitar-sus-sequence {
+  color: var(--ink);
+  font-size: clamp(20px, 4vw, 28px);
+  line-height: 1.45;
+  margin: 0 0 20px;
 }
 .guitar-self-check {
   font-size: 12px;

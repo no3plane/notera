@@ -59,7 +59,7 @@ export function ExerciseQuestion({
         {multi ? `${choiceLabel} · 已选 ${selected.length} / ${count}` : choiceLabel}
       </div>
       <div
-        className={`exercise-choices ${exercise.kind === 'build-note' ? 'note-choices' : ''}`}
+        className={`exercise-choices ${exercise.kind === 'build-note' ? 'note-choices' : exercise.kind}`}
         role="group"
         aria-label={choiceLabel}
       >

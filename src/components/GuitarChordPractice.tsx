@@ -5,6 +5,7 @@ import { useAudio } from '../hooks/useAudio';
 import {
   GUITAR_KEYS,
   PROGRESSIONS,
+  RATING_LABELS,
   chordsInKey,
   guitarProgressKey,
   pendingDegrees,
@@ -34,8 +35,6 @@ const PHASES = [
   ['connect', '和弦连接'],
   ['review', '卡点复练'],
 ] as const;
-const RATING_LABELS = { easy: '顺利', slow: '想了一会', missed: '没按出来' };
-
 export function GuitarChordPractice({
   family = 'triad',
   familySwitch,

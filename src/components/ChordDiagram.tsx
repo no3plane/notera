@@ -1,17 +1,19 @@
 import { rootPosition } from '../lib/guitarChords';
-import type { ChordVoicing, GuitarChord } from '../lib/guitarChords';
+import type { ChordVoicing } from '../lib/guitarChords';
 
 export function ChordDiagram({
   chord,
   voicing,
   compact = false,
+  movingStrings,
 }: {
-  chord: GuitarChord;
+  chord: { symbol: string };
   voicing: ChordVoicing;
   compact?: boolean;
+  movingStrings?: readonly number[];
 }) {
   const pressed = voicing.frets.filter((f): f is number => f !== null && f > 0);
-  const start = Math.min(...pressed) <= 1 ? 1 : Math.min(...pressed);
+  const start = voicing.rootFret === 0 ? 1 : Math.max(1, Math.min(...pressed));
   const rootIndex = 6 - voicing.rootString;
   const x = (i: number) => 46 + i * 28;
   const y = (fret: number) => 60 + (fret - start + 0.5) * 33;
@@ -20,7 +22,11 @@ export function ChordDiagram({
     .join('，');
   return (
     <figure className="chord-diagram">
-      <svg viewBox="0 0 232 238" role="img" aria-label={`${chord.symbol} 指法：${description}`}>
+      <svg
+        viewBox={movingStrings?.length ? '12 20 196 210' : '0 0 232 238'}
+        role="img"
+        aria-label={`${chord.symbol} 指法：${description}`}
+      >
         <title>
           {chord.symbol} · {rootPosition(voicing)}
         </title>
@@ -45,33 +51,36 @@ export function ChordDiagram({
             {start + fret}
           </text>
         ))}
-        {voicing.frets.map((fret, i) => (
-          <g key={i}>
-            <line
-              x1={x(i)}
-              x2={x(i)}
-              y1="60"
-              y2="192"
-              className="chord-wire"
-              style={{ strokeWidth: 1.8 - i * 0.2 }}
-            />
-            <text x={x(i)} y="218" textAnchor="middle" className="chord-axis">
-              {6 - i}
-            </text>
-            {fret === null ? (
-              <text x={x(i)} y="44" textAnchor="middle" className="chord-axis">
-                ×
-              </text>
-            ) : fret === 0 ? (
-              <circle
-                cx={x(i)}
-                cy="39"
-                r="6"
-                className={i === rootIndex ? 'chord-open chord-root-open' : 'chord-open'}
+        {voicing.frets.map((fret, i) => {
+          const moving = movingStrings?.includes(6 - i);
+          return (
+            <g key={i}>
+              <line
+                x1={x(i)}
+                x2={x(i)}
+                y1="60"
+                y2="192"
+                className={moving ? 'chord-moving-string' : 'chord-wire'}
+                style={{ strokeWidth: moving ? 2.5 : 1.8 - i * 0.2 }}
               />
-            ) : null}
-          </g>
-        ))}
+              <text x={x(i)} y="218" textAnchor="middle" className="chord-axis">
+                {6 - i}
+              </text>
+              {fret === null ? (
+                <text x={x(i)} y="44" textAnchor="middle" className="chord-axis">
+                  ×
+                </text>
+              ) : fret === 0 ? (
+                <circle
+                  cx={x(i)}
+                  cy="39"
+                  r="6"
+                  className={i === rootIndex ? 'chord-open chord-root-open' : 'chord-open'}
+                />
+              ) : null}
+            </g>
+          );
+        })}
         {voicing.barre && (
           <line
             x1={x(voicing.barre.from)}

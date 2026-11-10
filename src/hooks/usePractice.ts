@@ -12,7 +12,11 @@ export function usePractice(notify: (message: string) => void) {
     const progress = readProgress() ?? emptyProgress();
     const entry = new URLSearchParams(location.search).get('practice');
     const mode: Mode =
-      entry === GUITAR_CHORD_MODES.triad ? GUITAR_CHORD_MODES[readChordFamily()] : 'interval';
+      entry === GUITAR_CHORD_MODES.sus
+        ? GUITAR_CHORD_MODES.sus
+        : entry === GUITAR_CHORD_MODES.triad
+          ? GUITAR_CHORD_MODES[readChordFamily()]
+          : 'interval';
     return {
       level: 'basic',
       mode,
@@ -46,9 +50,10 @@ export function usePractice(notify: (message: string) => void) {
           performance.now(),
           mode,
           state.progress.exerciseMistakes,
+          state.progress,
         ),
       }),
-    [state.level, state.mode, state.progress.mistakes, state.progress.exerciseMistakes],
+    [state.level, state.mode, state.progress],
   );
   const reset = useCallback(() => {
     dispatch({
@@ -67,6 +72,7 @@ export function usePractice(notify: (message: string) => void) {
         performance.now(),
         state.mode,
         state.backup.exerciseMistakes,
+        state.backup,
       ),
     });
     notify('已恢复上次记录。');

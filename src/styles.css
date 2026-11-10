@@ -897,6 +897,16 @@ footer {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
+.exercise-choices:is(.chord-sus-change, .chord-sus-tones-reverse, .chord-sus-diatonic) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.exercise-choices.chord-sus-tones-forward {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.practice-tip summary {
+  cursor: pointer;
+  font-size: 13px;
+}
 .exercise-choices button {
   border: 1px solid var(--line);
   background: #fafbf7;
@@ -1027,6 +1037,98 @@ body:has(.chord-theory) :is(.topic-tabs button:not(.active), .mode-description) 
   font-size: inherit;
 }
 
+.sus-overview {
+  max-width: 920px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.sus-overview-label {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: 13px;
+}
+.sus-overview h2 {
+  margin: 8px 0;
+  font-size: clamp(20px, 3vw, 25px);
+  font-weight: 500;
+}
+.sus-overview-formulas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 22px;
+}
+.sus-overview-formulas > div {
+  border-block-start: 1px solid var(--line);
+  padding: 8px 0 0;
+}
+.sus-overview-formulas dt {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+.sus-overview-formulas dd {
+  margin: 0;
+}
+.sus-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.sus-overview-table caption {
+  margin-bottom: 8px;
+  text-align: left;
+  font-weight: 600;
+}
+.sus-overview-table th,
+.sus-overview-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px 8px 0;
+  vertical-align: top;
+}
+.sus-overview-table th {
+  font-weight: 500;
+}
+.sus-overview-table tbody th {
+  width: 18%;
+}
+.sus-overview-table td:nth-child(2) {
+  width: 20%;
+  white-space: nowrap;
+}
+.sus-overview-table th span {
+  display: inline-block;
+  margin-inline-start: 8px;
+  color: var(--chord-secondary);
+}
+.sus-overview-exception {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+.sus-overview-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+}
+.sus-overview-start p {
+  color: var(--chord-secondary);
+  font-size: 13px;
+}
+@media (max-width: 540px) {
+  .sus-overview {
+    font-size: 13px;
+  }
+  .sus-overview-table th span {
+    display: block;
+    margin: 0;
+  }
+  .sus-overview-table td:nth-child(2) {
+    width: 25%;
+  }
+}
+
 @media (max-width: 780px) {
   .mode-toolbar {
     align-items: flex-start;
@@ -1067,6 +1169,9 @@ body:has(.chord-theory) :is(.topic-tabs button:not(.active), .mode-description) 
   .mode-toolbar .segmented button {
     justify-content: center;
     flex: 1;
+  }
+  .practice-mode-groups .segmented:has(> button:nth-child(4)) button {
+    padding-inline: 4px;
   }
   .mode-toolbar:has(.chord-family) {
     padding-top: 12px;

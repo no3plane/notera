@@ -5,6 +5,8 @@ import { ExerciseQuestion } from '../components/ExerciseQuestion';
 import { FretboardPractice } from '../components/FretboardPractice';
 import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
 import { GuitarChordPractice } from '../components/GuitarChordPractice';
+import { GuitarSusPractice } from '../components/GuitarSusPractice';
+import { DiatonicSusOverview } from '../components/DiatonicSusOverview';
 import {
   chordFamilyForMode,
   findExercise,
@@ -14,16 +16,19 @@ import {
   KINDS,
   MODE_DESCRIPTIONS,
   MODE_LABELS,
+  modesForTopic,
   TOPICS,
 } from '../lib/exercises';
+import type { Mode } from '../lib/exercises';
 import { kindStats } from '../lib/practice';
+import { DIATONIC_SUS_MODE } from '../lib/diatonicSus';
 import {
-  CHORD_FAMILIES,
   CHORD_FAMILY_LABELS,
+  PRACTICE_CHORD_FAMILIES,
   readChordFamily,
   saveChordFamily,
 } from '../lib/chordHarmony';
-import type { ChordFamily } from '../lib/chordHarmony';
+import type { PracticeChordFamily } from '../lib/chordHarmony';
 import { interval, name } from '../lib/theory';
 import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
@@ -42,20 +47,27 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const mode = state.mode ?? 'interval';
   const guitar = isGuitarChordMode(mode);
   const family = chordFamilyForMode(mode);
-  const [preferredFamily, setPreferredFamily] = useState(readChordFamily);
-  const topic = TOPICS.find((t) => t.modes.includes(mode) || t.seventhModes?.includes(mode))!;
-  const topicModes = (family === 'seventh' && topic.seventhModes) || topic.modes;
+  const [preferredFamily, setPreferredFamily] = useState(() => family ?? readChordFamily());
+  const [overview, setOverview] = useState(true);
+  const topic = TOPICS.find((t) => modesForTopic(t, family ?? 'triad').includes(mode))!;
+  const topicModes = modesForTopic(topic, family ?? 'triad');
   const forward = isForwardChordMode(mode);
-  function changeFamily(value: ChordFamily) {
-    if (value === family || !topic.seventhModes) return;
-    const nextModes = value === 'seventh' ? topic.seventhModes : topic.modes;
+  const diatonic = mode === DIATONIC_SUS_MODE;
+  const showOverview = diatonic && overview;
+  function changeMode(value: Mode) {
+    setOverview(value === DIATONIC_SUS_MODE);
+    start('basic', value);
+  }
+  function changeFamily(value: PracticeChordFamily) {
+    if (value === family) return;
+    const nextModes = modesForTopic(topic, value);
     setPreferredFamily(value);
     saveChordFamily(value);
-    start('basic', nextModes[topicModes.indexOf(mode)]);
+    changeMode(nextModes[topicModes.indexOf(mode)] ?? nextModes[0]);
   }
   const familySwitch = family && (
     <div className="segmented chord-family" role="group" aria-label="和弦类型">
-      {CHORD_FAMILIES.map((value) => (
+      {PRACTICE_CHORD_FAMILIES.map((value) => (
         <button
           key={value}
           className={family === value ? 'active' : ''}
@@ -95,6 +107,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.altKey ||
         mode === 'fretboard' ||
         guitar ||
+        showOverview ||
         empty ||
         done
       )
@@ -137,7 +150,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [dispatch, play, s, done, empty, guitar, forward]);
+  }, [dispatch, play, s, done, empty, guitar, forward, showOverview]);
   const correct = s.results.filter((r) => r.correct).length;
   const average = s.results.length
     ? s.results.reduce((total, r) => total + r.time, 0) / s.results.length / 1000
@@ -147,9 +160,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       <Heading
         eyebrow={guitar ? '吉他练习室' : 'PRACTICE ROOM'}
         description={
-          guitar
-            ? '一组一个大调，用第五、六弦根音的固定指法，把级数练到手上。'
-            : '音程、指板、和弦，逐项练习；拿起吉他，把乐理练到手上。'
+          family === 'sus' && guitar
+            ? MODE_DESCRIPTIONS[mode]
+            : guitar
+              ? '一组一个大调，用第五、六弦根音的固定指法，把级数练到手上。'
+              : '音程、指板、和弦，逐项练习；拿起吉他，把乐理练到手上。'
         }
         side="先练准确，再练熟练"
       >
@@ -162,8 +177,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
             className={topic === t ? 'active' : ''}
             aria-pressed={topic === t}
             onClick={() => {
-              if (topic !== t)
-                start('basic', ((preferredFamily === 'seventh' && t.seventhModes) || t.modes)[0]);
+              if (topic !== t) changeMode(modesForTopic(t, preferredFamily)[0]);
             }}
           >
             <small>0{i + 1}</small>
@@ -189,7 +203,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                     className={mode === value ? 'active' : ''}
                     aria-pressed={mode === value}
                     onClick={() => {
-                      if (mode !== value) start('basic', value);
+                      if (mode !== value) changeMode(value);
                     }}
                   >
                     {MODE_LABELS[value]}
@@ -201,9 +215,20 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         </PracticeModeToolbar>
       )}
       {guitar ? (
-        <GuitarChordPractice key={family} family={family} familySwitch={familySwitch} />
+        family === 'sus' ? (
+          <GuitarSusPractice familySwitch={familySwitch} />
+        ) : (
+          <GuitarChordPractice key={family} family={family} familySwitch={familySwitch} />
+        )
       ) : mode === 'fretboard' ? (
         <FretboardPractice controller={controller} />
+      ) : showOverview ? (
+        <DiatonicSusOverview
+          onStart={() => {
+            start('basic');
+            setOverview(false);
+          }}
+        />
       ) : (
         <div className={`practice-layout${family ? ' chord-theory' : ''}`}>
           <section ref={board} className="practice-board" aria-label={`${MODE_LABELS[mode]}练习`}>
@@ -218,7 +243,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                 onChange={(e) => start(e.target.value as Level)}
               >
                 <option value="basic">
-                  {!hasDifficulty ? '常规练习 · 10 题' : '自然音 · 基础'}
+                  {hasDifficulty ? '自然音 · 基础' : `常规练习 · ${diatonic ? 7 : 10} 题`}
                 </option>
                 {hasDifficulty && <option value="mixed">升降音 · 进阶</option>}
                 <option value="review">易错复习 · {mistakeCount} 题</option>
@@ -280,6 +305,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                 <button className="primary" onClick={() => start()}>
                   再练一轮 →
                 </button>
+                {diatonic && (
+                  <button className="plain-button" onClick={() => setOverview(true)}>
+                    查看总览
+                  </button>
+                )}
               </div>
             ) : current.exercise ? (
               <ExerciseQuestion session={s} dispatch={dispatch} play={play} format={format} />
@@ -288,6 +318,13 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
             )}
           </section>
           <aside className="practice-side">
+            {family === 'sus' && !diatonic && (
+              <details className="practice-tip">
+                <summary>查看挂留和弦示例</summary>
+                <p>C–E–G 里的 E 换成 D 就是 Csus2（1–2–5），换成 F 就是 Csus4（1–4–5）。</p>
+                <p>C、D、G 以 C 为根音时是 Csus2，以 G 为根音时是 Gsus4。</p>
+              </details>
+            )}
             <h2>
               {MODE_LABELS[mode]} <small className="practice-local-label">· 本机记录</small>
             </h2>
@@ -409,7 +446,12 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
                   <br />
                 </>
               ) : null}
-              <kbd>Space</kbd> 聆听 · <kbd>Enter</kbd> 提交 / 下一题
+              {!diatonic && (
+                <>
+                  <kbd>Space</kbd> 聆听 ·{' '}
+                </>
+              )}
+              <kbd>Enter</kbd> 提交 / 下一题
             </div>
           </aside>
         </div>

@@ -1,29 +1,16 @@
 import { shuffle } from './exercises';
-import { majorKeyChords } from './chordHarmony';
+import { MAJOR_KEYS as GUITAR_KEYS, majorKeyChords } from './chordHarmony';
 import type { ChordFamily, DiatonicChord, SeventhQuality } from './chordHarmony';
 import { midi } from './theory';
 import type { Note } from './types';
 
-export const GUITAR_KEYS = [
-  ['C', 'C', 0],
-  ['D♭', 'D', -1],
-  ['D', 'D', 0],
-  ['E♭', 'E', -1],
-  ['E', 'E', 0],
-  ['F', 'F', 0],
-  ['F♯', 'F', 1],
-  ['G', 'G', 0],
-  ['A♭', 'A', -1],
-  ['A', 'A', 0],
-  ['B♭', 'B', -1],
-  ['B', 'B', 0],
-] as const;
+export { GUITAR_KEYS };
 export type GuitarKey = (typeof GUITAR_KEYS)[number][0];
 export type RootString = 5 | 6;
 export const GUITAR_TUNING = [40, 45, 50, 55, 59, 64]; // Sixth to first string, standard tuning.
 export type GuitarChord = DiatonicChord;
 export interface ChordVoicing {
-  rootString: RootString;
+  rootString: 4 | RootString;
   rootFret: number;
   frets: (number | null)[];
   fingers: (number | null)[];
@@ -181,7 +168,7 @@ export function recommendedVoicings(chords: GuitarChord[]): ChordVoicing[] {
   return best;
 }
 export function rootPosition(voicing: ChordVoicing) {
-  return `第${voicing.rootString === 5 ? '五' : '六'}弦${voicing.rootFret ? `第 ${voicing.rootFret} 品` : '空弦'}`;
+  return `第${['四', '五', '六'][voicing.rootString - 4]}弦${voicing.rootFret ? `第 ${voicing.rootFret} 品` : '空弦'}`;
 }
 export function voicingNotes(voicing: ChordVoicing): Note[] {
   const spellings: Note[] = [
@@ -210,6 +197,11 @@ export const PROGRESSIONS = [
   [2, 5, 1],
 ];
 export type Rating = 'easy' | 'slow' | 'missed';
+export const RATING_LABELS: Record<Rating, string> = {
+  easy: '顺利',
+  slow: '想了一会',
+  missed: '没按出来',
+};
 export interface ChordAttempt {
   key: GuitarKey;
   degrees: number[];
