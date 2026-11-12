@@ -28,6 +28,11 @@ export const GUITAR_CHORD_MODES = {
   seventh: 'guitar-seventh-chords',
   sus: 'guitar-sus-chords',
 } as const;
+export const CONNECTION_MODES = {
+  triad: 'chord-connection',
+  seventh: 'seventh-connection',
+  sus: 'sus-connection',
+} as const;
 
 export const KINDS = [
   'interval',
@@ -39,7 +44,10 @@ export const KINDS = [
 ] as const;
 export type ExerciseKind = (typeof KINDS)[number];
 export type GuitarChordMode = (typeof GUITAR_CHORD_MODES)[PracticeChordFamily];
-export type Mode = ExerciseKind | GuitarChordMode;
+export type ConnectionMode = (typeof CONNECTION_MODES)[PracticeChordFamily];
+export type Mode = ExerciseKind | GuitarChordMode | ConnectionMode;
+export const isConnectionMode = (mode: Mode): mode is ConnectionMode =>
+  Object.values(CONNECTION_MODES).some((value) => value === mode);
 export const isGuitarChordMode = (mode: Mode): mode is GuitarChordMode =>
   Object.values(GUITAR_CHORD_MODES).some((guitarMode) => guitarMode === mode);
 export const isForwardChordMode = (mode: Mode) =>
@@ -47,7 +55,9 @@ export const isForwardChordMode = (mode: Mode) =>
 export const chordFamilyForMode = (mode: Mode): PracticeChordFamily | undefined =>
   PRACTICE_CHORD_FAMILIES.find(
     (family) =>
-      mode === GUITAR_CHORD_MODES[family] || CHORD_MODES[family].some((kind) => mode === kind),
+      mode === GUITAR_CHORD_MODES[family] ||
+      mode === CONNECTION_MODES[family] ||
+      CHORD_MODES[family].some((kind) => mode === kind),
   );
 export type StoredExerciseKind = ExerciseKind | 'strings' | 'chord-tones';
 export const KIND_LABELS: Record<Mode, string> = {
@@ -67,6 +77,9 @@ export const KIND_LABELS: Record<Mode, string> = {
   'chord-sus-tones-reverse': '根音＋构成音 → 和弦名',
   [DIATONIC_SUS_MODE]: '这个级数能挂什么？',
   'guitar-sus-chords': '实琴和弦',
+  'chord-connection': '常见进行',
+  'seventh-connection': '常见进行',
+  'sus-connection': '挂留与解决',
 };
 type Topic = { label: string } & (
   { modes: readonly Mode[] } | { chordModes: Record<PracticeChordFamily, readonly Mode[]> }
@@ -74,15 +87,22 @@ type Topic = { label: string } & (
 export const modesForTopic = (topic: Topic, family: PracticeChordFamily) =>
   'chordModes' in topic ? topic.chordModes[family] : topic.modes;
 export const TOPICS: Topic[] = [
-  { label: '音程推算', modes: ['interval', 'build-note'] },
-  { label: '指板定位', modes: ['fretboard'] },
-  { label: '和弦对应', chordModes: CHORD_MODES },
+  { label: '音程', modes: ['interval', 'build-note'] },
+  { label: '指板', modes: ['fretboard'] },
   {
-    label: '实琴和弦',
+    label: '单个和弦',
     chordModes: {
-      triad: [GUITAR_CHORD_MODES.triad],
-      seventh: [GUITAR_CHORD_MODES.seventh],
-      sus: [GUITAR_CHORD_MODES.sus],
+      triad: [...CHORD_MODES.triad, GUITAR_CHORD_MODES.triad],
+      seventh: [...CHORD_MODES.seventh, GUITAR_CHORD_MODES.seventh],
+      sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus],
+    },
+  },
+  {
+    label: '和弦连接',
+    chordModes: {
+      triad: [CONNECTION_MODES.triad],
+      seventh: [CONNECTION_MODES.seventh],
+      sus: [CONNECTION_MODES.sus],
     },
   },
 ];
@@ -104,6 +124,9 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'chord-sus-tones-reverse': '根据给定的根音判断和弦，三个构成音的顺序会打乱。',
   [DIATONIC_SUS_MODE]: '先看大调七个级数的总览，再判断只用调内音能组成哪种挂留和弦。',
   'guitar-sus-chords': '从第六弦 E 型和第五弦 A 型出发，练习挂留和弦的换音与解决。',
+  'chord-connection': '选一个进行，跟随节拍练习连续换指。',
+  'seventh-connection': '选一个七和弦进行，练习连续换指与落拍。',
+  'sus-connection': '在四小节进行里练习挂上与解决，保持下一小节的第一拍。',
 };
 export interface Exercise {
   id: string;

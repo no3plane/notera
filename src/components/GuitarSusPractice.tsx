@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAudio } from '../hooks/useAudio';
-import { RATING_LABELS, voicingNotes } from '../lib/guitarChords';
-import type { Rating } from '../lib/guitarChords';
+import { voicingNotes } from '../lib/guitarChords';
 import {
   changedStrings,
   readSusGuitarProgress,
@@ -18,14 +17,19 @@ import { ChordDiagram } from './ChordDiagram';
 import { GuitarSusConnection } from './GuitarSusConnection';
 import './guitarChords.css';
 
-const ratings = ['easy', 'slow', 'missed'] as const;
 type Round = {
   queue: ReturnType<typeof susGuitarQueue>;
-  ratings: Rating[];
+  index: number;
   revealed: boolean;
 };
 
-export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode }) {
+export function GuitarSusPractice({
+  familySwitch,
+  onConnect,
+}: {
+  familySwitch?: ReactNode;
+  onConnect?: () => void;
+}) {
   const [{ progress, round }, setPractice] = useState<{
     progress: SusGuitarProgress;
     round: Round | null;
@@ -35,18 +39,14 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
   const [audioError, setAudioError] = useState('');
   const play = useAudio(setAudioError);
   const heading = useRef<HTMLHeadingElement>(null);
-  const { root, attempts } = progress;
+  const { root } = progress;
   const { comparison, comparisonHint } = SUS_GUITAR_GROUPS[root];
   const [, major, sus4] = comparison;
-  const index = round?.ratings.length ?? 0;
+  const index = round?.index ?? 0;
   const task = round?.queue[index];
   const movingStrings = changedStrings(task ?? comparison);
   const phase = !round ? 'compare' : task ? 'switch' : 'summary';
   const shapes = !round ? comparison : task && round.revealed ? task : [];
-  const rootAttempts = attempts.filter((attempt) => attempt.root === root);
-  const toPractice = round?.ratings.flatMap((rating, i) =>
-    rating === 'easy' ? [] : [susTaskName(round.queue[i])],
-  );
 
   useEffect(() => {
     try {
@@ -59,7 +59,7 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
 
   function start() {
     const queue = susGuitarQueue(root);
-    setPractice((current) => ({ ...current, round: { queue, ratings: [], revealed: false } }));
+    setPractice((current) => ({ ...current, round: { queue, index: 0, revealed: false } }));
     heading.current?.focus();
   }
   function reveal() {
@@ -68,19 +68,16 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
       return { ...current, round: { ...current.round, revealed: true } };
     });
   }
-  function grade(rating: Rating) {
+  function next() {
     if (!task || !round?.revealed) return;
-    const attempt = { root, rating };
-    setPractice((current) => {
-      if (current.round !== round) return current;
-      return {
-        progress: {
-          ...current.progress,
-          attempts: [...current.progress.attempts, attempt].slice(-500),
-        },
-        round: { ...round, ratings: [...round.ratings, rating], revealed: false },
-      };
-    });
+    setPractice((current) =>
+      current.round !== round
+        ? current
+        : {
+            ...current,
+            round: { ...round, index: round.index + 1, revealed: false },
+          },
+    );
     heading.current?.focus();
   }
 
@@ -101,9 +98,9 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
         event.preventDefault();
         reveal();
       }
-      if (round?.revealed && /^[1-3]$/.test(event.key)) {
+      if (round?.revealed && event.key === 'Enter') {
         event.preventDefault();
-        grade(ratings[Number(event.key) - 1]);
+        next();
       }
     }
     document.addEventListener('keydown', onKey);
@@ -147,9 +144,9 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
         <button
           className={showConnection ? 'active' : ''}
           aria-pressed={showConnection}
-          onClick={() => setShowConnection(true)}
+          onClick={() => (onConnect ? onConnect() : setShowConnection(true))}
         >
-          和弦连接
+          {onConnect ? '去练挂留连接' : '和弦连接'}
         </button>
       </div>
       {showConnection ? (
@@ -161,7 +158,7 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
               [
                 ['compare', '跟弹对照'],
                 ['switch', '随机切换'],
-                ['summary', '本组自评'],
+                ['summary', '完成'],
               ] as const
             ).map(([step, label], i) => (
               <li
@@ -184,7 +181,7 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
                   {round && task
                     ? `第 ${index + 1} / ${round.queue.length} 题`
                     : round
-                      ? '本组记录'
+                      ? '练习结束'
                       : '三个和弦'}
                 </span>
               </div>
@@ -258,19 +255,16 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
               {task &&
                 (round?.revealed ? (
                   <>
-                    <p className="guitar-self-check">核对指法后，评价刚才的表现。</p>
-                    <div className="guitar-rating" role="group" aria-label="本题自评">
-                      {ratings.map((rating, i) => (
-                        <button key={rating} onClick={() => grade(rating)}>
-                          <span>{i + 1}</span>
-                          {RATING_LABELS[rating]}
-                        </button>
-                      ))}
+                    <p className="guitar-self-check">对照指法，检查变化弦的声音。</p>
+                    <div className="guitar-bottom">
+                      <button className="guitar-primary" onClick={next}>
+                        {index + 1 === round!.queue.length ? '完成本组' : '下一题'}
+                      </button>
                     </div>
                   </>
                 ) : (
                   <div className="guitar-bottom">
-                    <span>空格揭晓 · 揭晓后按 1 / 2 / 3 自评</span>
+                    <span>空格揭晓 · Enter 下一题</span>
                     <button className="guitar-primary" onClick={reveal}>
                       弹好了，核对指法
                     </button>
@@ -278,26 +272,6 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
                 ))}
               {round && !task && (
                 <>
-                  <div className="guitar-summary-stats">
-                    {ratings.map((rating) => (
-                      <div key={rating}>
-                        <span>{RATING_LABELS[rating]}</span>
-                        <b>{round.ratings.filter((value) => value === rating).length}</b>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="guitar-summary-review">
-                    <h3>待巩固的转换</h3>
-                    {toPractice?.length ? (
-                      <ul>
-                        {toPractice.map((value) => (
-                          <li key={value}>{value}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>本组每题都弹得顺利。</p>
-                    )}
-                  </div>
                   <div className="guitar-bottom guitar-summary-actions">
                     <button
                       className="guitar-text-button"
@@ -311,7 +285,10 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
                     <button className="guitar-secondary" onClick={start}>
                       同组再练一次 →
                     </button>
-                    <button className="guitar-primary" onClick={() => setShowConnection(true)}>
+                    <button
+                      className="guitar-primary"
+                      onClick={() => (onConnect ? onConnect() : setShowConnection(true))}
+                    >
                       进入和弦连接 →
                     </button>
                   </div>
@@ -332,22 +309,7 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch: ReactNode })
                   ))}
                 </dl>
               </div>
-              <h3>{root} 组的积累</h3>
-              <dl className="guitar-key-stats">
-                <div>
-                  <dt>已练自评</dt>
-                  <dd>{rootAttempts.length} 次</dd>
-                </div>
-                <div>
-                  <dt>顺利</dt>
-                  <dd>{rootAttempts.filter((attempt) => attempt.rating === 'easy').length} 次</dd>
-                </div>
-              </dl>
-              <p className="guitar-save-note" role="status">
-                {storageError
-                  ? '浏览器暂时无法保存，当前仍可继续练习。'
-                  : '自评记录自动保存在本机。'}
-              </p>
+              {storageError && <p role="status">浏览器暂时无法保存设置，当前仍可继续练习。</p>}
             </aside>
           </div>
         </>

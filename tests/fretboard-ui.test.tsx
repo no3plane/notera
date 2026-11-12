@@ -10,7 +10,7 @@ vi.mock('../src/hooks/useAudio', () => ({ useAudio: () => vi.fn().mockResolvedVa
 async function openFretboard() {
   const user = userEvent.setup();
   render(<App />);
-  await user.click(screen.getByRole('button', { name: /指板定位/ }));
+  await user.click(screen.getByRole('button', { name: '指板' }));
   await user.click(screen.getByRole('button', { name: '找音接力' }));
   return user;
 }

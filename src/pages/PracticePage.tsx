@@ -1,23 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { Heading } from '../components/Heading';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
 import { FretboardPractice } from '../components/FretboardPractice';
 import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
 import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import { GuitarSusPractice } from '../components/GuitarSusPractice';
+import { ChordConnectionPractice } from '../components/ChordConnectionPractice';
 import { DiatonicSusOverview } from '../components/DiatonicSusOverview';
 import {
   chordFamilyForMode,
   findExercise,
   isForwardChordMode,
   isGuitarChordMode,
+  isConnectionMode,
   KIND_LABELS,
   KINDS,
   MODE_DESCRIPTIONS,
   MODE_LABELS,
   modesForTopic,
   TOPICS,
+  CONNECTION_MODES,
+  CHORD_MODES,
+  GUITAR_CHORD_MODES,
 } from '../lib/exercises';
 import type { Mode } from '../lib/exercises';
 import { kindStats } from '../lib/practice';
@@ -46,6 +50,8 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     progress = state.progress;
   const mode = state.mode ?? 'interval';
   const guitar = isGuitarChordMode(mode);
+  const connection = isConnectionMode(mode);
+  const interactive = guitar || connection;
   const family = chordFamilyForMode(mode);
   const [preferredFamily, setPreferredFamily] = useState(() => family ?? readChordFamily());
   const [overview, setOverview] = useState(true);
@@ -60,10 +66,14 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   }
   function changeFamily(value: PracticeChordFamily) {
     if (value === family) return;
-    const nextModes = modesForTopic(topic, value);
     setPreferredFamily(value);
     saveChordFamily(value);
-    changeMode(nextModes[topicModes.indexOf(mode)] ?? nextModes[0]);
+    if (guitar) changeMode(GUITAR_CHORD_MODES[value]);
+    else if (connection) changeMode(CONNECTION_MODES[value]);
+    else {
+      const index = CHORD_MODES[family!].findIndex((kind) => kind === mode);
+      changeMode(CHORD_MODES[value][index] ?? CHORD_MODES[value][0]);
+    }
   }
   const familySwitch = family && (
     <div className="segmented chord-family" role="group" aria-label="和弦类型">
@@ -74,7 +84,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           aria-pressed={family === value}
           onClick={() => changeFamily(value)}
         >
-          {CHORD_FAMILY_LABELS[value]}
+          {connection && value === 'sus' ? '挂留与解决' : CHORD_FAMILY_LABELS[value]}
         </button>
       ))}
     </div>
@@ -86,7 +96,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       const exercise = findExercise(id);
       return exercise && exercise.kind === mode;
     }).length;
-  const stats = guitar ? { total: 0, correct: 0, time: 0 } : kindStats(progress, mode);
+  const stats = interactive ? { total: 0, correct: 0, time: 0 } : kindStats(progress, mode);
   const current = s.queue[s.index];
   const showNotation = current
     ? !current.exercise || current.exercise.kind === 'build-note'
@@ -106,7 +116,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         e.ctrlKey ||
         e.altKey ||
         mode === 'fretboard' ||
-        guitar ||
+        interactive ||
         showOverview ||
         empty ||
         done
@@ -150,28 +160,19 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [dispatch, play, s, done, empty, guitar, forward, showOverview]);
+  }, [dispatch, play, s, done, empty, interactive, forward, showOverview]);
   const correct = s.results.filter((r) => r.correct).length;
   const average = s.results.length
     ? s.results.reduce((total, r) => total + r.time, 0) / s.results.length / 1000
     : 0;
   return (
     <>
-      <Heading
-        eyebrow={guitar ? '吉他练习室' : 'PRACTICE ROOM'}
-        description={
-          family === 'sus' && guitar
-            ? MODE_DESCRIPTIONS[mode]
-            : guitar
-              ? '一组一个大调，用第五、六弦根音的固定指法，把级数练到手上。'
-              : '音程、指板、和弦，逐项练习；拿起吉他，把乐理练到手上。'
-        }
-        side="先练准确，再练熟练"
-      >
-        {guitar ? '实琴和弦' : '乐理练习'}
-      </Heading>
+      <div className="practice-heading">
+        <h1>{topic.label}</h1>
+        <p>{connection ? '选一个进行，直接开始。' : '选你今天想练的，每项都可以独立开始。'}</p>
+      </div>
       <div className="topic-tabs" role="group" aria-label="练习专题">
-        {TOPICS.map((t, i) => (
+        {TOPICS.map((t) => (
           <button
             key={t.label}
             className={topic === t ? 'active' : ''}
@@ -180,12 +181,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
               if (topic !== t) changeMode(modesForTopic(t, preferredFamily)[0]);
             }}
           >
-            <small>0{i + 1}</small>
             {t.label}
           </button>
         ))}
       </div>
-      {mode !== 'fretboard' && !guitar && (
+      {mode !== 'fretboard' && !connection && (
         <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
           <div className="practice-mode-groups">
             {familySwitch}
@@ -214,11 +214,17 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </div>
         </PracticeModeToolbar>
       )}
-      {guitar ? (
+      {connection ? (
+        <ChordConnectionPractice key={family} family={family!} familySwitch={familySwitch} />
+      ) : guitar ? (
         family === 'sus' ? (
-          <GuitarSusPractice familySwitch={familySwitch} />
+          <GuitarSusPractice onConnect={() => changeMode(CONNECTION_MODES.sus)} />
         ) : (
-          <GuitarChordPractice key={family} family={family} familySwitch={familySwitch} />
+          <GuitarChordPractice
+            key={family}
+            family={family}
+            onConnect={() => changeMode(CONNECTION_MODES[family!])}
+          />
         )
       ) : mode === 'fretboard' ? (
         <FretboardPractice controller={controller} />

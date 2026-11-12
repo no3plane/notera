@@ -1,0 +1,391 @@
+/* Achromatic ledger, seed 1926671018. Keep Notera's sage paper and type.
+   Signature: a progression is a short score; the green cursor carries the beat.
+   At 1188px: 876px score + 24px gutter + 288px reference = 1188px. */
+:root {
+  --muted: #5c685b;
+  --practice-subtle: #5c685b;
+  --practice-active: #e9ece6;
+  --practice-control: #bcc6b7;
+}
+.page-enter {
+  animation: none;
+}
+.topbar {
+  height: 64px;
+}
+.practice-label {
+  color: var(--practice-subtle);
+  font-size: 13px;
+}
+.brand-sub {
+  color: var(--practice-subtle);
+  font-size: 12px;
+  letter-spacing: normal;
+}
+.practice-heading {
+  margin: 0 0 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.practice-heading h1 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.025em;
+  line-height: 1.4;
+}
+.practice-heading p {
+  color: var(--practice-subtle);
+  font-size: 14px;
+  margin: 0;
+}
+.topic-tabs {
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom-color: var(--line);
+}
+.topic-tabs button {
+  padding: 10px 20px;
+  min-height: 44px;
+  color: var(--practice-subtle);
+  border: 0;
+  margin: 0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.topic-tabs button.active {
+  background: var(--practice-active);
+  color: var(--ink);
+}
+.page-enter .segmented {
+  flex-wrap: wrap;
+}
+.page-enter .segmented button {
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--practice-subtle);
+}
+.page-enter .segmented button.active {
+  box-shadow: none;
+  color: var(--ink);
+}
+.page-enter .mode-toolbar {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.page-enter .mode-toolbar p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--practice-subtle);
+}
+.page-enter .practice-mode-groups {
+  gap: 12px;
+}
+.page-enter .mode-description {
+  color: var(--practice-subtle);
+  font-size: 13px;
+}
+.single-chord-tasks {
+  margin: 20px 0;
+  width: fit-content;
+}
+.connection-scope {
+  display: flex;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 20px 0;
+}
+.connection-scope label,
+.connection-setup label,
+.connection-shape label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.connection-practice select {
+  border: 1px solid var(--practice-control);
+  background: var(--white);
+  padding: 8px 24px 8px 10px;
+  color: var(--ink);
+  max-width: 100%;
+}
+.connection-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px;
+  gap: 24px;
+  align-items: start;
+}
+.connection-practice .guitar-board {
+  min-width: 0;
+}
+.connection-practice .guitar-stage-heading {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 16px 0;
+}
+.connection-setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+.connection-sequence {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 500;
+  margin: 24px 0 8px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.connection-instruction {
+  font-size: 14px;
+  margin: 0 0 16px;
+  color: var(--practice-subtle);
+  line-height: 1.7;
+}
+.connection-timing {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.connection-practice .guitar-loop-controls {
+  gap: 12px;
+  margin: 16px 0;
+}
+.connection-practice .guitar-loop-controls label {
+  font-size: 13px;
+}
+.connection-practice .guitar-loop-score thead th {
+  background: transparent;
+}
+.connection-practice .guitar-loop-score tbody th small {
+  display: block;
+  margin: 4px 0 0;
+}
+.connection-practice .guitar-loop-score tbody th {
+  padding: 8px 12px;
+  border-inline-start-width: 1px;
+}
+.connection-practice .guitar-loop-score tbody td {
+  height: 64px;
+}
+.connection-practice .guitar-loop-score [aria-current='step'] {
+  background: var(--green-dark);
+  color: var(--white);
+}
+.connection-practice .guitar-loop-score strong {
+  font-size: clamp(13px, 2vw, 18px);
+}
+.connection-aside {
+  min-width: 0;
+  font-size: 13px;
+}
+.connection-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.connection-aside h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+.connection-aside p {
+  color: var(--practice-subtle);
+  line-height: 1.7;
+  margin: 0 0 8px;
+}
+.connection-reference {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+.connection-reference summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 500;
+  padding-top: 8px;
+}
+.connection-shape {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.connection-shape h3 small {
+  font-size: 13px;
+  color: var(--practice-subtle);
+  margin-left: 8px;
+}
+.connection-shape .chord-diagram svg {
+  max-width: 184px;
+}
+.connection-shape .chord-diagram figcaption {
+  font-size: 12px;
+}
+.connection-shape label {
+  align-items: flex-start;
+  flex-direction: column;
+}
+.connection-shape label select {
+  width: 100%;
+}
+.connection-practice .guitar-text-button {
+  min-height: 44px;
+  font-size: 13px;
+}
+.connection-pair-practice {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.connection-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.connection-link-list .guitar-text-button {
+  padding: 0;
+  text-decoration-color: var(--practice-control);
+}
+footer {
+  font-size: 11px;
+  letter-spacing: normal;
+  color: var(--practice-subtle);
+}
+.footer-note {
+  display: none;
+}
+@media (max-width: 1000px) {
+  .connection-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .connection-aside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 24px;
+  }
+  .connection-reference {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 600px) {
+  .practice-heading {
+    display: block;
+    margin-bottom: 14px;
+  }
+  .practice-heading h1 {
+    font-size: 24px;
+  }
+  .practice-heading p {
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  .topic-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .topic-tabs button {
+    padding: 10px 2px;
+    font-size: 13px;
+  }
+  .page-enter .segmented button {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .practice-mode-groups {
+    width: 100%;
+  }
+  .practice-mode-groups > .segmented {
+    width: 100%;
+  }
+  .practice-mode-groups > .segmented:not(.chord-family) button {
+    flex: 1 1 auto;
+  }
+  .page-enter .chord-family button {
+    flex: 1;
+  }
+  .connection-scope {
+    margin: 16px 0;
+    gap: 12px;
+  }
+  .connection-scope > .chord-family {
+    width: 100%;
+  }
+  .connection-setup {
+    gap: 12px;
+  }
+  .connection-setup > .segmented {
+    order: -1;
+    width: 100%;
+  }
+  .connection-setup > .segmented button {
+    flex: 1;
+  }
+  .connection-practice .guitar-stage-heading {
+    font-size: 20px;
+  }
+  .connection-practice .guitar-board-header {
+    font-size: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .connection-sequence {
+    font-size: 24px;
+    margin: 20px 0 8px;
+  }
+  .connection-practice .guitar-loop-score tbody td {
+    height: 56px;
+  }
+  .connection-practice .guitar-loop-score tbody th {
+    padding: 8px 4px;
+  }
+  .connection-practice .guitar-loop-controls {
+    align-items: flex-start;
+  }
+  .connection-timing {
+    gap: 10px;
+  }
+  .connection-timing label {
+    flex-wrap: nowrap;
+  }
+  .connection-practice .guitar-loop-controls > button {
+    margin-left: auto;
+  }
+  .connection-aside {
+    display: block;
+  }
+  .connection-reference[open] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+  .connection-reference summary {
+    width: 100%;
+  }
+  .connection-shape {
+    flex: 1 1 calc(50% - 16px);
+    min-width: 0;
+  }
+  .connection-shape label select {
+    padding-right: 4px;
+    font-size: 12px;
+  }
+  .single-chord-tasks {
+    width: 100%;
+  }
+  .single-chord-tasks button {
+    flex: 1;
+  }
+  .page-enter:has(.guitar-connection[data-playing]) > .practice-heading,
+  .connection-practice:has(.guitar-connection[data-playing]) > .connection-scope,
+  .guitar-connection[data-playing] :is(.connection-setup, .connection-instruction),
+  .connection-practice:has(.guitar-connection[data-playing]) .connection-aside {
+    display: none;
+  }
+  .guitar-connection[data-playing] .connection-sequence {
+    margin-top: 8px;
+  }
+}

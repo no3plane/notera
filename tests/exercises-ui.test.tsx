@@ -16,7 +16,7 @@ describe('new exercise flows', () => {
   it('opens the seven-degree overview before the first question and safely switches chord families', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     await user.click(screen.getByRole('button', { name: '挂留和弦' }));
     const mode = '这个级数能挂什么？';
     await user.click(screen.getByRole('button', { name: mode }));
@@ -46,7 +46,7 @@ describe('new exercise flows', () => {
   it('switches the same prompt type to sevenths, accepts four distinct tones, and remembers the selection', async () => {
     const user = userEvent.setup();
     const view = render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     await user.click(screen.getByRole('button', { name: '和弦名 → 构成音' }));
     const toggle = screen.getByRole('button', { name: '七和弦' });
     toggle.focus();
@@ -70,7 +70,7 @@ describe('new exercise flows', () => {
 
     view.unmount();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     expect(screen.getByRole('button', { name: '七和弦', pressed: true })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '构成音 → 和弦名' }));
     const reverse = currentExercise();
@@ -102,7 +102,7 @@ describe('new exercise flows', () => {
   it('requires three tones, supports deselection and keeps wrong answers in scoped review', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     await user.click(screen.getByRole('button', { name: '和弦名 → 构成音' }));
     const exercise = currentExercise();
     expect(exercise.answer).toHaveLength(3);
@@ -144,7 +144,7 @@ describe('new exercise flows', () => {
   it('limits number shortcuts to numbered tones when switching chord directions', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     await user.click(screen.getByRole('button', { name: '和弦名 → 构成音' }));
     const exercise = currentExercise();
     const choices = within(screen.getByRole('group', { name: '选择三个构成音' }));
@@ -212,7 +212,7 @@ describe('new exercise flows', () => {
     async (label) => {
       const user = userEvent.setup();
       render(<App />);
-      await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+      await user.click(screen.getByRole('button', { name: '单个和弦' }));
       await user.click(screen.getByRole('button', { name: label }));
       const forward = label === '和弦名 → 构成音';
       for (let i = 0; i < 10; i++) {
@@ -240,7 +240,7 @@ describe('new exercise flows', () => {
   it('does not assign number shortcuts to chord names or Roman degrees in degree practice', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     for (let i = 0; i < 2; i++) {
       const exercise = currentExercise();
       const choices = within(screen.getByRole('group', { name: '选择答案' }));
@@ -259,12 +259,12 @@ describe('new exercise flows', () => {
     const user = userEvent.setup();
     render(<App />);
     expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: /指板定位/ }));
+    await user.click(screen.getByRole('button', { name: '指板' }));
     expect(screen.getByRole('region', { name: '指板定位练习' })).toBeTruthy();
     expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: /和弦对应/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
     expect(screen.queryByText(/混练|混合|^弦间关系$/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: /音程推算/ }));
+    await user.click(screen.getByRole('button', { name: '音程' }));
     await user.click(screen.getByRole('button', { name: '推算音名' }));
     for (let i = 0; i < 10; i++) {
       const exercise = currentExercise();

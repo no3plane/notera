@@ -33,10 +33,10 @@ it.each([
   ['E', ['A', 'D', 'E', 'A']],
   ['A', ['D', 'G', 'A', 'D']],
 ] as const)(
-  'shares the suspended family across topics and saves a complete %s-group practice',
+  'shares the suspended family across topics and completes the %s group without ratings',
   (root, progression) => {
     const view = render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /和弦对应/ }));
+    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '挂留和弦' }));
     expect(
       within(screen.getByRole('group', { name: '练习题型' })).getByRole('button', {
@@ -44,7 +44,7 @@ it.each([
         pressed: true,
       }),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /实琴和弦/ }));
+    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
     const group = screen.getByRole('combobox', { name: '开放指法组' });
     fireEvent.change(group, { target: { value: root } });
     const sus2Diagram =
@@ -66,28 +66,26 @@ it.each([
         .getAllByRole('rowheader')
         .map((bar) => bar.querySelector('strong')?.textContent),
     ).toEqual(progression);
-    fireEvent.click(screen.getByRole('button', { name: '指法与切换' }));
+    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
     fireEvent.click(screen.getByRole('button', { name: /开始随机切换/ }));
     expect(screen.queryAllByRole('img')).toHaveLength(0);
 
     for (let i = 0; i < 4; i++) {
       fireEvent.keyDown(document.body, { code: 'Space', key: ' ' });
       expect(screen.getAllByRole('img')).toHaveLength(2);
-      fireEvent.keyDown(document.body, { key: i === 0 ? '2' : '1' });
+      fireEvent.keyDown(document.body, { key: 'Enter' });
     }
     expect(screen.getByRole('heading', { name: '本组练习完成' })).toBeTruthy();
-    const review = screen.getByRole('heading', { name: '待巩固的转换' }).parentElement!;
-    expect(within(review).getByRole('listitem')).toBeTruthy();
-    expect(readSusGuitarProgress()).toEqual({
-      root,
-      attempts: ['slow', 'easy', 'easy', 'easy'].map((rating) => ({ root, rating })),
-    });
+    expect(screen.queryByRole('group', { name: '本题自评' })).toBeNull();
+    expect(readSusGuitarProgress()).toEqual({ root, attempts: [] });
 
     view.unmount();
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /实琴和弦/ }));
+    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
     expect(screen.getByRole('option', { name: `${root} 组`, selected: true })).toBeTruthy();
-    expect(screen.getByText('4 次')).toBeTruthy();
+    expect(screen.queryByText('已练自评')).toBeNull();
   },
 );
 

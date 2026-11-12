@@ -11,76 +11,76 @@ function advance(ms: number) {
   });
 }
 
-it('marks the target row in place while the playback cursor stays on the current measure', () => {
+it('shows the whole plan before starting and keeps it visible while only the cursor advances', () => {
   render(<GuitarSusConnection root="E" />);
   expect((screen.getByRole('combobox', { name: '速度' }) as HTMLSelectElement).value).toBe('60');
-  fireEvent.click(screen.getByRole('button', { name: '开始连接' }));
+  const plan = screen.getByRole('table', { name: '整轮挂留安排' });
+  const plannedRows = within(plan).getAllByRole('row').slice(1);
+  expect(plannedRows.map((row) => row.textContent)).toEqual([
+    '第 1 圈第 1 拍换 Esus2第 3 拍恢复 E',
+    '第 2 圈第 1 拍换 Esus4第 3 拍恢复 E',
+    '第 3 圈第 2 拍换 Esus2第 4 拍恢复 E',
+    '第 4 圈第 2 拍换 Esus4第 4 拍恢复 E',
+  ]);
+  const writtenPlan = plan.textContent;
   const score = within(screen.getByRole('table', { name: '四小节节拍谱' }));
-  const measure = (name: string) =>
-    within(score.getByRole('rowheader', { name }).closest('tr')!).getAllByRole('cell');
-  const d = measure('第 2 小节 D');
-  const e = measure('第 3 小节 E');
-  const a = measure('第 4 小节 A');
+  const target = score.getByRole('rowheader', { name: '第 3 小节 E' }).closest('tr')!;
+  const cells = within(target).getAllByRole('cell');
+  const firstMeasure = score.getByRole('rowheader', { name: '第 1 小节 A' }).closest('tr')!;
+  const lastMeasure = score.getByRole('rowheader', { name: '第 4 小节 A' }).closest('tr')!;
+  expect(score.getByText('挂上').closest('td')).toBe(cells[0]);
+  expect(score.getByText('恢复').closest('td')).toBe(cells[2]);
+  expect(cells[0].textContent).toContain('Esus2');
+
+  fireEvent.click(screen.getByRole('button', { name: '开始节拍' }));
   expect(screen.getByText('预数四拍')).toBeTruthy();
   expect(score.getByRole('columnheader', { current: 'step' }).textContent).toBe('1');
-  advance(3000);
-  expect(score.getByRole('columnheader', { current: 'step' }).textContent).toBe('4');
-  expect(score.queryByRole('cell', { current: 'step' })).toBeNull();
-  advance(6000);
-
-  const allCues: string[] = [];
-  for (let i = 0; i < 4; i++) {
-    expect(score.queryByText('挂上')).toBeNull();
-    advance(1000);
-    const enter = e.indexOf(score.getByText('挂上').closest('td')!);
-    const release = e.indexOf(score.getByText('回原').closest('td')!);
-    const chord = e[enter].querySelector('strong')?.textContent;
-    allCues.push(`${enter}:${chord}:${release}`);
-    expect(chord).toMatch(/^Esus[24]$/);
-    expect(release - enter).toBeGreaterThanOrEqual(1);
-    expect(release - enter).toBeLessThanOrEqual(2);
-    expect(e[release].querySelector('strong')?.textContent).toBe('E');
-    expect(e.filter((cell) => cell.hasAttribute('data-suspended'))).toEqual(
-      e.slice(enter, release),
-    );
-    expect(score.getByRole('cell', { current: 'step' })).toBe(d[2]);
-    advance(1000);
-    expect(score.getByRole('cell', { current: 'step' })).toBe(d[3]);
-    advance(1000);
-    expect(screen.getByText(`第 ${i + 1} / 4 圈 · 第 3 小节`)).toBeTruthy();
-    expect(score.getByRole('cell', { current: 'step' })).toBe(e[0]);
-    expect(score.getByText('挂上').closest('td')).toBe(e[enter]);
-    advance(enter * 1000);
-    expect(score.getByRole('cell', { current: 'step' })).toBe(e[enter]);
-    advance((release - enter) * 1000);
-    expect(score.getByRole('cell', { current: 'step' })).toBe(e[release]);
-    advance((4 - release) * 1000);
-    expect(score.queryByText('挂上')).toBeNull();
-    expect(score.getByRole('cell', { current: 'step' })).toBe(a[0]);
-    if (i < 3) advance(9000);
-  }
-  expect(new Set(allCues).size).toBe(4);
-  expect(allCues.filter((cue) => cue.includes('Esus2'))).toHaveLength(2);
-  expect(allCues.filter((cue) => cue.includes('Esus4'))).toHaveLength(2);
   advance(4000);
+
+  for (let i = 0; i < 4; i++) {
+    expect(plan.textContent).toBe(writtenPlan);
+    expect(within(firstMeasure).getByRole('cell', { current: 'step' })).toBeTruthy();
+    const enter = i < 2 ? 0 : 1;
+    const release = i < 2 ? 2 : 3;
+    const chord = `Esus${i % 2 ? 4 : 2}`;
+    // Both instructions are already on the score before reaching the target measure.
+    expect(score.getByText('挂上').closest('td')).toBe(cells[enter]);
+    expect(score.getByText('恢复').closest('td')).toBe(cells[release]);
+    expect(cells[enter].textContent).toContain(chord);
+    expect(cells[release].querySelector('strong')?.textContent).toBe('E');
+    advance(8000);
+    expect(score.getByRole('cell', { current: 'step' })).toBe(cells[0]);
+    expect(within(plan).getByRole('row', { current: 'step' })).toBe(plannedRows[i]);
+    advance(4000);
+    expect(within(lastMeasure).getByRole('cell', { current: 'step' })).toBeTruthy();
+    expect(score.getByText('挂上').closest('td')).toBe(cells[enter]);
+    advance(4000);
+  }
+  expect(plan.textContent).toBe(writtenPlan);
   expect(screen.getByText('本轮连接完成')).toBeTruthy();
-  fireEvent.click(screen.getByRole('radio', { name: '稳住了' }));
-  fireEvent.click(screen.getByRole('radio', { name: '接上了' }));
-  expect(screen.getAllByRole('radio', { checked: true })).toHaveLength(2);
+  expect(screen.queryByRole('group', { name: '连接自评' })).toBeNull();
+  expect(screen.getByRole('button', { name: '再练一轮' })).toBeTruthy();
 });
 
-it('stops at once and resets the instruction before the next count-in', () => {
+it('keeps the written plan unchanged when stopping, changing tempo, and restarting', () => {
   render(<GuitarSusConnection root="A" />);
+  const plan = screen.getByRole('table', { name: '整轮挂留安排' });
+  const writtenPlan = plan.textContent;
+  const score = screen.getByRole('table', { name: '四小节节拍谱' });
+  const initialScore = score.textContent;
+  expect(writtenPlan).toContain('Asus2');
+  expect(writtenPlan).toContain('Asus4');
   fireEvent.change(screen.getByRole('combobox', { name: '速度' }), { target: { value: '120' } });
-  fireEvent.click(screen.getByRole('button', { name: '开始连接' }));
+  expect(plan.textContent).toBe(writtenPlan);
+  fireEvent.click(screen.getByRole('button', { name: '开始节拍' }));
   advance(5000);
-  const score = within(screen.getByRole('table', { name: '四小节节拍谱' }));
-  expect(score.getByText('挂上')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '停止节拍' }));
   advance(34_000);
-  expect(score.queryByText('挂上')).toBeNull();
+  expect(plan.textContent).toBe(writtenPlan);
+  expect(score.textContent).toBe(initialScore);
   expect(screen.queryByText('本轮连接完成')).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '开始连接' }));
+  fireEvent.click(screen.getByRole('button', { name: '开始节拍' }));
   expect(screen.getByText('预数四拍')).toBeTruthy();
-  expect(score.queryByText('挂上')).toBeNull();
+  expect(plan.textContent).toBe(writtenPlan);
+  expect(score.textContent).toBe(initialScore);
 });

@@ -374,24 +374,6 @@ body:has(.guitar-practice) .topic-tabs button {
   margin: 0;
   color: var(--guitar-secondary);
 }
-.guitar-key-stats {
-  margin: 8px 0 12px;
-}
-.guitar-key-stats > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 0;
-}
-.guitar-key-stats dt {
-  color: var(--guitar-secondary);
-  font-size: 13px;
-}
-.guitar-key-stats dd {
-  margin: 0;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
 .guitar-aside .guitar-save-note,
 .guitar-aside .guitar-self-note {
   font-size: 12px;
@@ -664,6 +646,37 @@ body:has(.guitar-practice) .topic-tabs button {
   color: var(--guitar-secondary);
   font-size: 12px;
 }
+.guitar-sus-plan {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 20px;
+  text-align: left;
+}
+.guitar-sus-plan caption {
+  text-align: left;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.guitar-sus-plan th,
+.guitar-sus-plan td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+.guitar-sus-plan thead th {
+  color: var(--guitar-secondary);
+}
+.guitar-sus-plan tbody th {
+  white-space: nowrap;
+}
+.guitar-sus-plan tr[aria-current='step'] {
+  background: var(--guitar-current);
+}
+.guitar-sus-plan strong {
+  font-weight: 500;
+  white-space: nowrap;
+}
 .guitar-loop-announcement {
   position: absolute;
   width: 1px;
@@ -737,63 +750,6 @@ body:has(.guitar-practice) .topic-tabs button {
   color: var(--guitar-secondary);
   text-align: center;
   margin: 16px 0 12px;
-}
-.guitar-rating {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-.guitar-rating button {
-  padding: 12px 4px;
-  border: 1px solid var(--guitar-control);
-  background: var(--white);
-  font-size: 14px;
-}
-.guitar-rating button:hover {
-  border-color: var(--ink);
-  background: var(--guitar-raised);
-}
-.guitar-rating button span {
-  font-size: 11px;
-  color: var(--guitar-secondary);
-  margin-right: 8px;
-}
-.guitar-summary-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 28px 0;
-}
-.guitar-summary-stats > div {
-  border-right: 1px solid var(--line);
-  padding-left: 20px;
-}
-.guitar-summary-stats > div:first-child {
-  padding-left: 0;
-}
-.guitar-summary-stats > div:last-child {
-  border-right: 0;
-}
-.guitar-summary-stats span {
-  color: var(--guitar-secondary);
-  font-size: 12px;
-  display: block;
-}
-.guitar-summary-stats b {
-  font-weight: 400;
-  font-size: 30px;
-  font-variant-numeric: tabular-nums;
-}
-.guitar-summary-review {
-  margin: 28px 0;
-}
-.guitar-summary-review h3 {
-  font-size: 14px;
-  font-weight: 500;
-}
-.guitar-summary-review p {
-  font-size: 13px;
-  color: var(--guitar-secondary);
-  line-height: 2;
 }
 @media (max-width: 1050px) {
   .guitar-layout {
@@ -894,15 +850,6 @@ body:has(.guitar-practice) .topic-tabs button {
   }
   .guitar-answer-multiple .chord-diagram svg {
     max-width: 160px;
-  }
-  .guitar-rating {
-    gap: 6px;
-  }
-  .guitar-rating button {
-    font-size: 13px;
-  }
-  .guitar-rating button span {
-    display: none;
   }
   .guitar-prompt {
     gap: 8px;

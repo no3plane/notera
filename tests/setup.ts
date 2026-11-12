@@ -4,7 +4,7 @@ import { cleanup } from '@testing-library/react';
 afterEach(() => {
   cleanup();
   localStorage.clear();
-  location.hash = '';
+  history.replaceState(null, '', '/');
 });
 window.scrollTo = vi.fn();
 Element.prototype.scrollIntoView = vi.fn();

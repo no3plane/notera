@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
@@ -44,7 +44,7 @@ describe('single-key guitar practice', () => {
     expect(document.querySelector('.guitar-hints')?.textContent).toContain('大七和弦');
     await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
     expect(screen.getAllByRole('img', { name: /F♯maj7 指法/ })).toHaveLength(2);
-    await user.click(screen.getByRole('button', { name: /想了一会/ }));
+    await user.click(screen.getByRole('button', { name: '下一题' }));
 
     await user.click(screen.getByRole('button', { name: '三和弦' }));
     expect(key().value).toBe('G');
@@ -53,7 +53,7 @@ describe('single-key guitar practice', () => {
     expect(key().value).toBe('F♯');
     expect(readGuitarProgress('seventh')).toMatchObject({
       key: 'F♯',
-      attempts: [{ degrees: [1], rating: 'slow', hints: 1 }],
+      attempts: [],
       overrides: { 'F♯': { 1: 6 } },
     });
   });
@@ -80,7 +80,7 @@ describe('single-key guitar practice', () => {
     await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
     for (let i = 0; i < 5; i++) {
       await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
-      await user.click(screen.getByRole('button', { name: /顺利/ }));
+      await user.click(screen.getByRole('button', { name: '下一题' }));
     }
     expect(screen.queryByRole('img')).toBeNull();
     await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
@@ -101,11 +101,12 @@ describe('single-key guitar practice', () => {
   it('is available beside the existing theory exercises', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /04实琴和弦/ }));
+    await user.click(screen.getByRole('button', { name: '单个和弦' }));
+    await user.click(screen.getByRole('button', { name: '实琴和弦' }));
     expect(screen.getByRole('region', { name: '实琴和弦练习' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('实琴和弦');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('单个和弦');
   });
-  it('locks one key and its fingerings, reveals progressively, covers every degree, then connections and weak-degree review', async () => {
+  it('locks one key and its fingerings, reveals progressively, covers every degree and ends the round', async () => {
     const user = userEvent.setup();
     render(
       <StrictMode>
@@ -122,12 +123,10 @@ describe('single-key guitar practice', () => {
     expect(screen.queryByRole('img')).toBeNull();
     expect(screen.queryByRole('group', { name: '本题自评' })).toBeNull();
     const seen = new Set<string>();
-    let weakDegree = 0;
     for (let i = 0; i < 7; i++) {
       const prompt = document.querySelector('.guitar-prompt')!.textContent!;
       seen.add(prompt);
       if (i === 0) {
-        weakDegree = Number(prompt.match(/第 (\d) 级/)![1]);
         await user.click(screen.getByRole('button', { name: '一点提示' }));
         expect(document.querySelector('.guitar-hints')!.textContent).toMatch(/三和弦/);
         await user.click(screen.getByRole('button', { name: '再提示一步' }));
@@ -138,38 +137,12 @@ describe('single-key guitar practice', () => {
       }
       await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
       expect(screen.getAllByRole('img', { name: /指法/ }).length).toBeGreaterThanOrEqual(2);
-      const ratings = screen.getByRole('group', { name: '本题自评' });
-      await user.click(
-        within(ratings).getByRole('button', { name: i === 0 ? /没按出来/ : /顺利/ }),
-      );
+      await user.click(screen.getByRole('button', { name: i === 6 ? '完成本组' : '下一题' }));
     }
     expect(seen.size).toBe(7);
-    expect(document.querySelector('.guitar-stage-heading')!.textContent).toBe(
-      '把这些级数连起来弹。',
-    );
-    for (let i = 0; i < 3; i++) {
-      await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
-      expect(screen.getAllByRole('img').length).toBeGreaterThanOrEqual(3);
-      await user.click(screen.getByRole('button', { name: /顺利/ }));
-    }
-    expect(document.querySelector('.guitar-stage-heading')!.textContent).toBe(
-      '再给这个级数一次机会。',
-    );
-    expect(document.querySelector('.guitar-prompt')!.textContent).toContain(`第 ${weakDegree} 级`);
-    // Keyboard reveal and grading must not leak into the existing theory reducer.
-    fireEvent.keyDown(document.querySelector('.guitar-stage-heading')!, {
-      code: 'Space',
-      key: ' ',
-    });
-    fireEvent.keyDown(document.querySelector('.guitar-stage-heading')!, {
-      code: 'Digit1',
-      key: '1',
-    });
-    expect(screen.getByText('本组共完成 11 次自评。', { exact: false })).toBeTruthy();
+    expect(screen.getByText('本组完成 7 题。')).toBeTruthy();
     const stored = readGuitarProgress();
-    expect(stored.attempts).toHaveLength(11);
-    expect(stored.attempts.every((attempt) => attempt.key === 'A')).toBe(true);
-    expect(stored.attempts[0].hints).toBe(3);
+    expect(stored.attempts).toHaveLength(0);
     await user.click(screen.getByRole('button', { name: '返回总览 / 换调' }));
     expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).disabled).toBe(
       false,
@@ -194,7 +167,7 @@ describe('single-key guitar practice', () => {
     await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
     await user.click(screen.getByRole('button', { name: '结束本组' }));
     expect(readGuitarProgress().attempts).toHaveLength(0);
-    expect(screen.getByText(/本组共完成 0 次自评/)).toBeTruthy();
+    expect(screen.getByText('本组完成 0 题。')).toBeTruthy();
     view.unmount();
     render(<GuitarChordPractice />);
     expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).value).toBe(

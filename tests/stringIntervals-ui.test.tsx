@@ -20,7 +20,7 @@ async function open() {
       <App />
     </StrictMode>,
   );
-  await user.click(screen.getByRole('button', { name: /指板定位/ }));
+  await user.click(screen.getByRole('button', { name: '指板' }));
   return user;
 }
 describe('string interval practice', () => {

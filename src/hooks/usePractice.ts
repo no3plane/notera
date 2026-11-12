@@ -4,19 +4,12 @@ import { createSession, practiceReducer } from '../lib/practice';
 import type { PracticeState } from '../lib/practice';
 import type { Level } from '../lib/types';
 import type { Mode } from '../lib/exercises';
-import { GUITAR_CHORD_MODES } from '../lib/exercises';
-import { readChordFamily } from '../lib/chordHarmony';
+import { LAST_PRACTICE_KEY, readPracticeMode } from '../lib/practiceNavigation';
 
 export function usePractice(notify: (message: string) => void) {
   const [state, dispatch] = useReducer(practiceReducer, undefined, (): PracticeState => {
     const progress = readProgress() ?? emptyProgress();
-    const entry = new URLSearchParams(location.search).get('practice');
-    const mode: Mode =
-      entry === GUITAR_CHORD_MODES.sus
-        ? GUITAR_CHORD_MODES.sus
-        : entry === GUITAR_CHORD_MODES.triad
-          ? GUITAR_CHORD_MODES[readChordFamily()]
-          : 'interval';
+    const mode = readPracticeMode();
     return {
       level: 'basic',
       mode,
@@ -25,6 +18,17 @@ export function usePractice(notify: (message: string) => void) {
       session: createSession('basic', progress.mistakes, performance.now(), mode),
     };
   });
+  useEffect(() => {
+    const mode = state.mode ?? 'interval';
+    try {
+      localStorage.setItem(LAST_PRACTICE_KEY, mode);
+    } catch {
+      /* Keep navigation usable. */
+    }
+    const url = new URL(location.href);
+    url.searchParams.set('practice', mode);
+    history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [state.mode]);
   useEffect(() => {
     if (!writeProgress(state.progress)) notify('浏览器未允许保存；本次练习仍可继续。');
   }, [state.progress, notify]);

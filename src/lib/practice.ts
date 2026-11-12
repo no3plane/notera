@@ -7,6 +7,7 @@ import {
   findExercise,
   isForwardChordMode,
   isGuitarChordMode,
+  isConnectionMode,
   shuffle,
   takeExercise,
 } from './exercises';
@@ -121,7 +122,7 @@ export function createSession(
   progress: Pick<Progress, 'exerciseHistory' | 'byKind'> = {},
 ): Session {
   let queue: Question[];
-  if (mode === 'fretboard' || isGuitarChordMode(mode)) {
+  if (mode === 'fretboard' || isGuitarChordMode(mode) || isConnectionMode(mode)) {
     queue = []; // Interactive guitar modes own their sessions and records.
   } else if (mode === DIATONIC_SUS_MODE) {
     queue = diatonicSusQueue(level, exerciseMistakes, progress);
