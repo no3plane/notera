@@ -5,6 +5,7 @@ import { interval, midi } from './theory';
 import type { Note } from './types';
 
 export { GUITAR_KEYS };
+export { PROGRESSIONS } from './chordProgressions';
 export type GuitarKey = (typeof GUITAR_KEYS)[number][0];
 export type RootString = 5 | 6;
 export const GUITAR_TUNING = [40, 45, 50, 55, 59, 64]; // Sixth to first string, standard tuning.
@@ -204,11 +205,6 @@ export function voicingNotes(voicing: ChordVoicing): Note[] {
     return [{ ...spellings[value % 12], octave: Math.floor(value / 12) - 1 }];
   });
 }
-export const PROGRESSIONS = [
-  [1, 4, 5, 1],
-  [1, 5, 6, 4],
-  [2, 5, 1],
-];
 export type Rating = 'easy' | 'slow' | 'missed';
 export const RATING_LABELS: Record<Rating, string> = {
   easy: '顺利',

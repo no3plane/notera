@@ -141,6 +141,183 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
+.progression-picker {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.progression-trigger {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid var(--practice-control);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+}
+.progression-trigger strong,
+.progression-option strong {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.progression-trigger-label,
+.progression-trigger-action {
+  color: var(--practice-subtle);
+}
+.progression-option-songs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.progression-option-songs small {
+  color: var(--practice-subtle);
+  font-size: 12px;
+  margin-left: 4px;
+}
+.progression-song-reference {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.progression-song-reference summary {
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--practice-subtle);
+}
+.progression-song-reference p {
+  margin: 4px 0 12px;
+  color: var(--practice-subtle);
+}
+.progression-song-reference ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.progression-song-reference li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.progression-song-reference li > span,
+.progression-song-reference small {
+  color: var(--practice-subtle);
+}
+.progression-song-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.progression-song-title strong {
+  font-weight: 500;
+}
+.progression-song-title a {
+  margin-left: auto;
+  color: var(--green-dark);
+  text-underline-offset: 3px;
+}
+.progression-song-reference li > .progression-song-chords {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.progression-song-reference small {
+  font-size: 12px;
+}
+.progression-trigger-action {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.progression-library {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--practice-active);
+  border-radius: 6px;
+}
+.progression-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 12px;
+}
+.progression-filters button {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--practice-subtle);
+  font-size: 13px;
+  cursor: pointer;
+}
+.progression-filters button[aria-pressed='true'] {
+  background: var(--white);
+  color: var(--ink);
+  font-weight: 600;
+}
+.progression-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 3px;
+}
+.progression-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.progression-option[aria-pressed='true'] {
+  border-color: var(--green-dark);
+}
+.progression-option-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+.progression-option-chords {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.progression-trigger:disabled {
+  cursor: default;
+  background: var(--practice-active);
+}
+.progression-trigger:not(:disabled):hover,
+.progression-option:hover {
+  border-color: var(--ink);
+}
+.progression-picker button:focus-visible {
+  outline: 2px solid var(--green-dark);
+  outline-offset: 2px;
+}
 .connection-instruction {
   font-size: 14px;
   margin: 0 0 16px;
@@ -271,6 +448,27 @@ footer {
   }
 }
 @media (max-width: 600px) {
+  .progression-trigger {
+    gap: 6px 10px;
+    padding: 10px;
+  }
+  .progression-trigger-label {
+    width: 100%;
+  }
+  .progression-options {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 300px;
+  }
+  .progression-filters {
+    gap: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .progression-filters button {
+    padding-inline: 6px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
   .practice-heading {
     display: block;
     margin-bottom: 14px;

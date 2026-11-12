@@ -1,6 +1,24 @@
 import type { PracticeChordFamily } from './chordHarmony';
-import { validKey } from './guitarChords';
+import { chordsInKey, validKey } from './guitarChords';
 import type { GuitarKey } from './guitarChords';
+import { CHORD_PROGRESSIONS } from './chordProgressions';
+import { name, transpose } from './theory';
+import type { ChordFamily } from './chordHarmony';
+
+/** Resolve the altered dominant and half-diminished chord in minor cadences. */
+export function connectionChordsInKey(key: GuitarKey, family: ChordFamily, minor = false) {
+  const chords = chordsInKey(key, family);
+  if (!minor) return chords;
+  const root = chords[2].root;
+  chords[2] = {
+    ...chords[2],
+    quality: '7',
+    symbol: `${name(root, false)}7`,
+    tones: [root, transpose(root, 3, 4, 1), transpose(root, 5, 7, 1), transpose(root, 7, 10, 1)],
+  };
+  chords[6] = chordsInKey(key, 'seventh')[6];
+  return chords;
+}
 
 /** Historical record format; current practice always follows the metronome. */
 type ConnectionStyle = 'free' | 'timed';
@@ -65,7 +83,12 @@ export function readConnectionProgress(
     const saved = data.settings ?? {};
     if (validKey(saved.key) && (family !== 'sus' || saved.key === 'E' || saved.key === 'A'))
       settings.key = saved.key;
-    if ([0, 1, 2].includes(saved.progression)) settings.progression = saved.progression;
+    if (
+      Number.isInteger(saved.progression) &&
+      saved.progression >= 0 &&
+      saved.progression < CHORD_PROGRESSIONS.length
+    )
+      settings.progression = saved.progression;
     if (isTempo(saved.tempo)) settings.tempo = saved.tempo;
     if (isLoops(saved.loops)) settings.loops = saved.loops;
     if (saved.display === 'names' || saved.display === 'degrees') settings.display = saved.display;
@@ -79,7 +102,7 @@ export function readConnectionProgress(
               validKey(a.key) &&
               Array.isArray(a.degrees) &&
               a.degrees.length >= 2 &&
-              a.degrees.length <= 4 &&
+              a.degrees.length <= 8 &&
               a.degrees.every(isDegree) &&
               isStyle(a.style) &&
               (a.style === 'free' ? a.tempo === null : isTempo(a.tempo)) &&

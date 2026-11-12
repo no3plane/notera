@@ -5,7 +5,6 @@ import { useAudio } from '../hooks/useAudio';
 import {
   GUITAR_KEYS,
   PROGRESSIONS,
-  chordsInKey,
   guitarProgressKey,
   readGuitarProgress,
   recommendedVoicings,
@@ -17,6 +16,7 @@ import type { GuitarKey, RootString } from '../lib/guitarChords';
 import type { PracticeChordFamily } from '../lib/chordHarmony';
 import {
   connectionStorageKey,
+  connectionChordsInKey,
   progressionLinks,
   readConnectionProgress,
 } from '../lib/connectionPractice';
@@ -28,6 +28,9 @@ import {
 } from '../lib/guitarSusChords';
 import type { SusGuitarRoot } from '../lib/guitarSusChords';
 import { ChordDiagram } from './ChordDiagram';
+import { ProgressionPicker } from './ProgressionPicker';
+import { CHORD_PROGRESSIONS, progressionDegree } from '../lib/chordProgressions';
+import { name } from '../lib/theory';
 import './guitarChords.css';
 
 const beats = [1, 2, 3, 4];
@@ -58,12 +61,14 @@ export function ChordConnectionPractice({
   });
   const { settings } = progress;
   const { key, progression, tempo, loops, display, focus } = settings;
+  const pattern = CHORD_PROGRESSIONS[sus ? 0 : progression];
+  const minor = Boolean(pattern.minor);
   const root = (key === 'A' ? 'A' : 'E') as SusGuitarRoot;
   const harmonyKey = sus ? (root === 'E' ? 'A' : 'D') : key;
   const [fingerings, setFingerings] = useState(() => readGuitarProgress(sus ? 'triad' : family));
   const chords = useMemo(
-    () => chordsInKey(harmonyKey, sus ? 'triad' : family),
-    [harmonyKey, family, sus],
+    () => connectionChordsInKey(harmonyKey, sus ? 'triad' : family, minor),
+    [harmonyKey, family, sus, minor],
   );
   const recommended = useMemo(() => recommendedVoicings(chords), [chords]);
   const plan = chords.map((chord, i) => {
@@ -96,10 +101,14 @@ export function ChordConnectionPractice({
   const cue = sus && target >= 0 ? cues[scoreLoop] : undefined;
   const uniqueDegrees = [...new Set(sequence)];
   const nameOf = (degree: number) => chords[degree - 1].symbol;
-  const labelOf = (degree: number) =>
-    display === 'names' ? nameOf(degree) : chords[degree - 1].roman;
+  const degreeOf = (degree: number) => String(progressionDegree(degree, minor));
+  const labelOf = (degree: number) => (display === 'names' ? nameOf(degree) : degreeOf(degree));
   const linkName = (link: ConnectionLink) => link.map(labelOf).join(' → ');
-  const context = sus ? `${root} 组 · ${harmonyKey} 大调` : `${key} 大调`;
+  const context = sus
+    ? `${root} 组 · ${harmonyKey} 大调`
+    : minor
+      ? `${name(chords[5].root, false)} 小调 · 关系大调 ${key}`
+      : `${key} 大调`;
 
   useEffect(() => {
     try {
@@ -171,7 +180,7 @@ export function ChordConnectionPractice({
         {familySwitch}
         {!fixedRoot && (
           <label>
-            {sus ? '开放指法组' : '调性'}
+            {sus ? '开放指法组' : minor ? '关系大调' : '调性'}
             <select
               aria-label={sus ? '开放指法组' : '连接调性'}
               value={key}
@@ -207,30 +216,26 @@ export function ChordConnectionPractice({
           <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
             {sus ? '挂留与解决' : focus ? '把这一对换顺' : '常见进行连接'}
           </h2>
-          <div className="connection-setup">
-            {!sus && !focus && (
-              <label>
-                进行
-                <select
-                  aria-label="和弦进行"
-                  disabled={active}
-                  value={progression}
-                  onChange={(e) => configure({ progression: Number(e.target.value), focus: null })}
-                >
-                  {PROGRESSIONS.map((degrees, i) => (
-                    <option key={i} value={i}>
-                      {degrees.map((degree) => chords[degree - 1].roman).join('–')}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
+          {!sus && (
+            <div className="connection-setup">
+              <ProgressionPicker
+                value={progression}
+                onChange={(value) => configure({ progression: value, focus: null })}
+                disabled={active}
+                chordKey={key}
+                family={family}
+                showNames={display === 'names'}
+              />
+            </div>
+          )}
           <p className="connection-sequence" aria-label="本轮进行">
-            {sequence
-              .map((degree) => (display === 'names' ? nameOf(degree) : chords[degree - 1].roman))
-              .join(' → ')}
+            {sequence.map(labelOf).join(' → ')}
           </p>
+          {minor && (
+            <p className="connection-instruction">
+              以小调主音为 1；包含属七和弦，251 还包含半减七和弦。
+            </p>
+          )}
           <p className="connection-instruction">
             {sus && target >= 0
               ? '每圈的挂留与恢复拍点已全部列出，按谱跟弹。'
@@ -254,7 +259,7 @@ export function ChordConnectionPractice({
                     <th scope="row">第 {i + 1} 圈</th>
                     <td>
                       第 {item.enter} 拍换{' '}
-                      <strong>{display === 'names' ? item.chord : `V${item.type}`}</strong>
+                      <strong>{display === 'names' ? item.chord : `5${item.type}`}</strong>
                     </td>
                     <td>
                       第 {item.release} 拍恢复 <strong>{labelOf(5)}</strong>
@@ -345,8 +350,8 @@ export function ChordConnectionPractice({
                     data-target={(sus && i === target) || undefined}
                   >
                     <th scope="row" aria-label={`第 ${i + 1} 小节 ${labelOf(degree)}`}>
-                      <strong>{display === 'names' ? chord : chords[degree - 1].roman}</strong>
-                      {display === 'names' && <small>{chords[degree - 1].roman}</small>}
+                      <strong>{labelOf(degree)}</strong>
+                      {display === 'names' && <small>{degreeOf(degree)} 级</small>}
                     </th>
                     {beats.map((value) => {
                       const suspended = rowCue && value >= rowCue.enter && value < rowCue.release;
@@ -357,7 +362,7 @@ export function ChordConnectionPractice({
                           ? suspended
                             ? rowCue!.chord
                             : chord
-                          : `${chords[degree - 1].roman}${suspended ? rowCue!.chord.slice(-4) : ''}`;
+                          : `${degreeOf(degree)}${suspended ? rowCue!.chord.slice(-4) : ''}`;
                       const showChord = value === 1 || Boolean(action);
                       return (
                         <td
@@ -433,7 +438,7 @@ export function ChordConnectionPractice({
               return (
                 <div className="connection-shape" key={degree}>
                   <h3>
-                    {chord.symbol} <small>{chord.roman}</small>
+                    {chord.symbol} <small>{degreeOf(degree)} 级</small>
                   </h3>
                   <ChordDiagram chord={chord} voicing={shape} />
                   {!sus && (

@@ -74,9 +74,8 @@ describe('independent connection practice', () => {
     fireEvent.change(screen.getByRole('combobox', { name: '连接调性' }), {
       target: { value: 'G' },
     });
-    fireEvent.change(screen.getByRole('combobox', { name: '和弦进行' }), {
-      target: { value: '2' },
-    });
+    click(/选择和弦进行/);
+    click('251 收束解决');
     fireEvent.change(screen.getByRole('combobox', { name: '速度' }), { target: { value: '80' } });
     fireEvent.change(screen.getByRole('combobox', { name: '循环圈数' }), {
       target: { value: '2' },
@@ -96,7 +95,7 @@ describe('independent connection practice', () => {
     expect((screen.getByRole('combobox', { name: '循环圈数' }) as HTMLSelectElement).value).toBe(
       '2',
     );
-    expect(screen.getByLabelText('本轮进行').textContent).toBe('ii → V → I');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('2 → 5 → 1');
     expect(location.search).toBe('?practice=chord-connection');
   });
   it('counts in, advances on beats, ends without evaluation and stops in the background', () => {
@@ -138,6 +137,95 @@ describe('independent connection practice', () => {
     expect(screen.getByLabelText('本轮进行').textContent).toBe('Dmaj7 → A7 → Bm7 → Gmaj7');
     click('三和弦');
     expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G → Am → F');
+  });
+  it('filters the library, previews transposed chords, and restores a long progression', () => {
+    const view = render(<ChordConnectionPractice />);
+    fireEvent.change(screen.getByRole('combobox', { name: '连接调性' }), {
+      target: { value: 'G' },
+    });
+    click(/选择和弦进行/);
+    expect(
+      screen.getByRole('button', { name: '1564 经典流行', pressed: true }).textContent,
+    ).toContain('G → D → Em → C');
+    click('长进行');
+    expect(screen.queryByRole('button', { name: '1645 经典老歌' })).toBeNull();
+    click('15634145 卡农式进行');
+    expect(screen.queryByRole('region', { name: '和弦进行库' })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /选择和弦进行/ }));
+    const expected = 'G → D → Em → Bm → C → G → C → D';
+    expect(screen.getByLabelText('本轮进行').textContent).toBe(expected);
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(9);
+    click('单练 D → G');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('D → G');
+    click('回到完整进行');
+    view.unmount();
+    render(<ChordConnectionPractice />);
+    expect(screen.getByLabelText('本轮进行').textContent).toBe(expected);
+  });
+  it('uses minor-relative numeric degrees throughout and keeps the correct altered chords', () => {
+    render(<ChordConnectionPractice />);
+    click(/选择和弦进行/);
+    click('小调进行');
+    click('小调 251 小调收束');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('Bm7♭5 → E7 → Am');
+    fireEvent.change(screen.getByRole('combobox', { name: '连接显示' }), {
+      target: { value: 'degrees' },
+    });
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('2 → 5 → 1');
+    expect(screen.getByRole('rowheader', { name: '第 1 小节 2' }).textContent).toBe('2');
+    click('单练 5 → 1');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('5 → 1');
+    click(/选择和弦进行/);
+    expect(screen.queryByText('Bm7♭5 → E7 → Am')).toBeNull();
+    click('小调 1451 小调回归');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('1 → 4 → 5 → 1');
+    fireEvent.change(screen.getByRole('combobox', { name: '连接显示' }), {
+      target: { value: 'names' },
+    });
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('Am → Dm → E7 → Am');
+  });
+  it('closes the library with Escape and locks changes during playback of all eight bars', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    render(<ChordConnectionPractice />);
+    click(/选择和弦进行/);
+    fireEvent.keyDown(screen.getByRole('button', { name: '1564 经典流行' }), { key: 'Escape' });
+    expect(screen.queryByRole('region', { name: '和弦进行库' })).toBeNull();
+    click(/选择和弦进行/);
+    click('15634145 卡农式进行');
+    fireEvent.change(screen.getByRole('combobox', { name: '循环圈数' }), {
+      target: { value: '1' },
+    });
+    click('开始节拍');
+    expect(
+      (screen.getByRole('button', { name: /选择和弦进行/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    act(() => vi.advanceTimersByTime(32_000));
+    expect(screen.queryByText('本轮连接完成')).toBeNull();
+    expect(screen.getByText('第 1 / 1 圈 · 第 8 小节')).toBeTruthy();
+    act(() => vi.advanceTimersByTime(4000));
+    expect(screen.getByText('本轮连接完成')).toBeTruthy();
+  });
+  it('shows song examples on options and switches the linked passage with the selected progression', () => {
+    render(<ChordConnectionPractice />);
+    click(/选择和弦进行/);
+    const option = screen.getByRole('button', { name: '15634145 卡农式进行' });
+    expect(option.textContent).toContain('《简单爱》周杰伦');
+    expect(option.textContent).toContain('《红日》李克勤');
+    expect(within(option).queryByRole('link')).toBeNull();
+    fireEvent.click(option);
+    const reference = document.querySelector('.progression-song-reference') as HTMLDetailsElement;
+    fireEvent.click(reference.querySelector('summary')!);
+    expect(reference.open).toBe(true);
+    const link = within(reference).getByRole('link', { name: '查看《红日》李克勤的参考谱例' });
+    expect(link.getAttribute('href')).toBe('https://chord4.com/tabs/22469');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(within(reference).getByText('主歌第一段')).toBeTruthy();
+    click(/选择和弦进行/);
+    click('6154 换序循环');
+    expect(document.querySelector('.progression-song-reference')).toBeNull();
+    click(/选择和弦进行/);
+    click('4365 柔和转折');
+    expect(document.querySelector('.progression-song-reference')).toBeNull();
   });
 });
 
