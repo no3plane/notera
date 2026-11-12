@@ -21,6 +21,20 @@ pnpm dev
 
 ## 安卓安装与离线使用（PWA）
 
+### GitHub Pages 部署
+
+本项目已配置 `.github/workflows/deploy-pages.yml`：推送到 `main` 后自动安装依赖、运行测试、构建并部署，也可在 Actions 中手动运行。构建会根据 Pages 配置自动设置资源路径，适配 `/notera/` 子目录或自定义域名，本地开发地址不变。
+
+首次使用：
+
+1. 打开 [仓库 Pages 设置](https://github.com/no3plane/notera/settings/pages)，在 **Build and deployment → Source** 中选择 **GitHub Actions**。GitHub Free 账户需使用公开仓库；私有仓库需支持 Pages 的付费套餐。
+2. 将部署配置推送到 `main`，在 [Actions 页面](https://github.com/no3plane/notera/actions/workflows/deploy-pages.yml) 等待 **Deploy to GitHub Pages** 成功。若配置已经推送，可点击 **Run workflow** 手动部署。
+3. 默认站点地址为 https://no3plane.github.io/notera/ 。安卓 Chrome 首次联网打开，等待缓存完成后安装到主屏幕，再用飞行模式验证离线练习。实际发布地址以 Actions 中的部署链接为准。
+
+以后推送到 `main` 即可更新网站。旧局域网 HTTP 地址下的练习记录不会自动转移到新地址。
+
+### 其他 HTTPS 静态托管
+
 1. 执行 `pnpm build`，将 `dist/` 内的全部文件部署到支持 **HTTPS** 的静态网站；保留 `sw.js`、manifest 和 icons，建议 `sw.js` 使用 `Cache-Control: no-cache`。
 2. 安卓手机用 Chrome 打开 HTTPS 网站，等待首次页面加载完成，在浏览器菜单中选择「添加到主屏幕」→「安装」（名称可能因浏览器版本而异）。
 3. 首次打开时保持联网，等待离线资源缓存完成；然后开启飞行模式，从桌面图标重新打开，确认可以练习和播放声音。以后使用无需电脑在线。
