@@ -218,7 +218,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
         <ChordConnectionPractice key={family} family={family!} familySwitch={familySwitch} />
       ) : guitar ? (
         family === 'sus' ? (
-          <GuitarSusPractice onConnect={() => changeMode(CONNECTION_MODES.sus)} />
+          <GuitarSusPractice />
         ) : (
           <GuitarChordPractice
             key={family}

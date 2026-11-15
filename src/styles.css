@@ -897,7 +897,7 @@ footer {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
-.exercise-choices:is(.chord-sus-change, .chord-sus-tones-reverse, .chord-sus-diatonic) {
+.exercise-choices:is(.chord-sus-tones-reverse, .chord-sus-diatonic) {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .exercise-choices.chord-sus-tones-forward {

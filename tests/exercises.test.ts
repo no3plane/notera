@@ -19,6 +19,7 @@ import { emptyProgress, readProgress, writeProgress } from '../src/lib/progress'
 import { interval, midi, name } from '../src/lib/theory';
 import { notation } from '../src/lib/notation';
 import { DIATONIC_SUS_LESSONS, DIATONIC_SUS_MODE } from '../src/lib/diatonicSus';
+import { isPracticeMode, LAST_PRACTICE_KEY, readPracticeMode } from '../src/lib/practiceNavigation';
 
 function initial(id: string): PracticeState {
   return {
@@ -35,6 +36,22 @@ function submit(state: PracticeState, choices: string[]) {
 }
 
 describe('question content', () => {
+  it.each([
+    ['chord-degree', 'degree:Dm:true', 'chord-tones-forward'],
+    ['chord-seventh-degree', 'seventh-degree:Cmaj7:false', 'chord-seventh-tones-forward'],
+    ['chord-sus-change', 'sus:change:Dsus4:D', 'chord-sus-tones-forward'],
+  ])(
+    'retires %s and opens its replacement from old links and preferences',
+    (mode, id, replacement) => {
+      expect(isPracticeMode(mode)).toBe(false);
+      expect(findExercise(id)).toBeUndefined();
+      localStorage.setItem(LAST_PRACTICE_KEY, mode);
+      expect(readPracticeMode()).toBe(replacement);
+      localStorage.setItem(LAST_PRACTICE_KEY, 'interval');
+      history.replaceState(null, '', `/?practice=${mode}`);
+      expect(readPracticeMode()).toBe(replacement);
+    },
+  );
   it('transposes with spelling, direction and octave intact', () => {
     expect(name(transpose({ letter: 'B', acc: 0, octave: 4 }, 3, 4, 1))).toBe('D♯5');
     expect(name(transpose({ letter: 'C', acc: 0, octave: 4 }, 3, 4, -1))).toBe('A♭3');
@@ -56,8 +73,6 @@ describe('question content', () => {
     expect(findExercise('tones:C:false')?.choices).toEqual(['1', '2', '3', '4', '5', '6', '7']);
     expect(findExercise('tones:Am:true')?.title).toBe('6 · 1 · 3，组成什么和弦？');
     expect(findExercise('tones:Am:true')?.answer).toEqual(['Am']);
-    expect(findExercise('degree:Dm:true')?.answer).toEqual(['ii']);
-    expect(findExercise('degree:Bdim:false')?.answer).toEqual(['Bdim']);
   });
   it('builds a full round of only the selected kind, covering all forward chords before repeats', () => {
     for (const mode of KINDS.filter((kind) => kind !== 'fretboard')) {
@@ -116,9 +131,7 @@ describe('question content', () => {
     ];
     const reverse = exerciseBank().filter((e) => e.kind === 'chord-seventh-tones-reverse');
     expect(new Set(reverse.map((e) => e.title)).size).toBe(7 * 24);
-    for (const [symbol, roman, tones] of chords) {
-      expect(findExercise(`seventh-degree:${symbol}:true`)?.answer).toEqual([roman]);
-      expect(findExercise(`seventh-degree:${symbol}:false`)?.answer).toEqual([symbol]);
+    for (const [symbol, , tones] of chords) {
       expect(findExercise(`seventh-tones:${symbol}:false`)?.answer).toEqual([...tones]);
       const variants = reverse.filter((e) => e.answer[0] === symbol);
       expect(variants).toHaveLength(24);
@@ -129,8 +142,6 @@ describe('question content', () => {
         expect(e.listenBefore).toEqual(e.notes);
       }
     }
-    const round = createSession('basic', [], 0, 'chord-seventh-degree');
-    expect(round.queue.every((q, i) => questionKey(q).endsWith(`:${i % 2 === 1}`))).toBe(true);
   });
   it('distinguishes sus2 and sus4 with the same tones by the stated root', () => {
     const csus2 = findExercise('sus:name:Csus2:012')!;
@@ -140,7 +151,6 @@ describe('question content', () => {
     expect(csus2.answer).toEqual(['Csus2']);
     expect(gsus4.answer).toEqual(['Gsus4']);
     expect(findExercise('sus:tones:Fsus4')?.answer).toEqual(['F', 'B♭', 'C']);
-    expect(findExercise('sus:change:Dsus4:D')?.answer).toEqual(['G → F♯']);
     const session = createSession('basic', [], 0, 'chord-sus-tones-reverse');
     expect(new Set(session.queue.map((q) => q.exercise?.answer[0])).size).toBe(10);
   });
@@ -165,6 +175,31 @@ describe('question content', () => {
 });
 
 describe('multi-type progress and review', () => {
+  it('preserves retired chord results without putting their mistakes into active reviews', () => {
+    const records = [
+      ['chord-degree', 'degree:Dm:true'],
+      ['chord-seventh-degree', 'seventh-degree:Bm7♭5:false'],
+      ['chord-sus-change', 'sus:change:Dsus4:D'],
+    ] as const;
+    const saved = {
+      ...emptyProgress(),
+      total: 3,
+      time: 6000,
+      byKind: Object.fromEntries(
+        records.map(([kind]) => [kind, { total: 1, correct: 0, time: 2000 }]),
+      ),
+      exerciseMistakes: records.map(([, id]) => id),
+      exerciseHistory: records.map(([, id]) => ({ id, correct: false })),
+    };
+    writeProgress(saved);
+    const restored = readProgress()!;
+    expect(restored).toEqual(saved);
+    for (const mode of KINDS) {
+      expect(createSession('review', [], 100, mode, restored.exerciseMistakes).queue).toHaveLength(
+        0,
+      );
+    }
+  });
   it('prioritizes the missed degree in a new key and clears it after an unhinted transposed answer', () => {
     const first = createSession('basic', [], 0, DIATONIC_SUS_MODE);
     expect(first.queue.every((q) => q.exercise?.diatonicSus?.key === 'C')).toBe(true);
@@ -202,16 +237,22 @@ describe('multi-type progress and review', () => {
     ).toEqual([]);
   });
   it('reloads and reviews a suspended-chord mistake in its own question type', () => {
-    const id = 'sus:change:Dsus4:D';
-    const wrong = submit(initial(id), ['G → F']);
+    const id = 'sus:name:Dsus4:012';
+    const wrong = submit(initial(id), ['Dsus2']);
     writeProgress(wrong.progress);
     const restored = readProgress()!;
-    expect(kindStats(restored, 'chord-sus-change')).toMatchObject({ total: 1, correct: 0 });
-    expect(kindStats(restored, 'chord-degree').total).toBe(0);
-    const session = createSession('review', [], 100, 'chord-sus-change', restored.exerciseMistakes);
+    expect(kindStats(restored, 'chord-sus-tones-reverse')).toMatchObject({ total: 1, correct: 0 });
+    expect(kindStats(restored, 'chord-tones-forward').total).toBe(0);
+    const session = createSession(
+      'review',
+      [],
+      100,
+      'chord-sus-tones-reverse',
+      restored.exerciseMistakes,
+    );
     expect(session.queue.map(questionKey)).toEqual([id]);
     expect(
-      submit({ ...wrong, progress: restored, session }, ['G → F♯']).progress.exerciseMistakes,
+      submit({ ...wrong, progress: restored, session }, ['Dsus4']).progress.exerciseMistakes,
     ).toEqual([]);
   });
   it('keeps triad and seventh progress and review separate after loading saved records', () => {
@@ -295,7 +336,7 @@ describe('multi-type progress and review', () => {
     expect(findExercise('tones:F:true')?.kind).toBe('chord-tones-reverse');
   });
   it('preserves legacy interval totals after the first new-type answer and round-trips new records', () => {
-    const state = initial('degree:C:false');
+    const state = initial('tones:C:true');
     state.progress = {
       ...emptyProgress(),
       total: 9,
@@ -310,7 +351,7 @@ describe('multi-type progress and review', () => {
     };
     const scored = submit(state, ['C']);
     expect(kindStats(scored.progress, 'interval')).toEqual({ total: 7, correct: 6, time: 9000 });
-    expect(kindStats(scored.progress, 'chord-degree')).toEqual({
+    expect(kindStats(scored.progress, 'chord-tones-reverse')).toEqual({
       total: 1,
       correct: 1,
       time: 2000,

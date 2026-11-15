@@ -10,12 +10,24 @@ const modes: readonly string[] = [
 export const isPracticeMode = (value: unknown): value is Mode =>
   typeof value === 'string' && modes.includes(value);
 
+const retiredModes: Record<string, Mode> = {
+  'chord-degree': 'chord-tones-forward',
+  'chord-seventh-degree': 'chord-seventh-tones-forward',
+  'chord-sus-change': 'chord-sus-tones-forward',
+};
+const currentMode = (value: string | null): Mode | undefined =>
+  isPracticeMode(value)
+    ? value
+    : value && Object.hasOwn(retiredModes, value)
+      ? retiredModes[value]
+      : undefined;
+
 export function readPracticeMode(): Mode {
-  const entry = new URLSearchParams(location.search).get('practice');
-  if (isPracticeMode(entry)) return entry;
+  const entry = currentMode(new URLSearchParams(location.search).get('practice'));
+  if (entry) return entry;
   try {
-    const saved = localStorage.getItem(LAST_PRACTICE_KEY);
-    if (isPracticeMode(saved)) return saved;
+    const saved = currentMode(localStorage.getItem(LAST_PRACTICE_KEY));
+    if (saved) return saved;
   } catch {
     /* A direct practice link works even without storage. */
   }

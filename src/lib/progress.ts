@@ -1,6 +1,6 @@
 import { LETTERS, name } from './theory';
 import type { HistoryEntry, Note, NotePair, Progress } from './types';
-import { findExercise, KINDS } from './exercises';
+import { findExercise, KINDS, RETIRED_CHORD_KINDS } from './exercises';
 import type { StoredExerciseKind } from './exercises';
 import { readMemoryProgress } from './fretboardMemory';
 import { readFretProgress } from './fretboard';
@@ -8,11 +8,18 @@ import { readStringProgress } from './stringIntervals';
 import { readSameNoteProgress } from './sameNote';
 
 // Retain saved results for the retired exercise without making it playable.
-const STORED_KINDS: StoredExerciseKind[] = [...KINDS, 'strings', 'chord-tones'];
+const STORED_KINDS: StoredExerciseKind[] = [
+  ...KINDS,
+  ...RETIRED_CHORD_KINDS,
+  'strings',
+  'chord-tones',
+];
 function isSavedExerciseId(id: unknown): id is string {
   if (typeof id !== 'string') return false;
   return (
     Boolean(findExercise(id)) ||
+    /^(seventh-)?degree:[A-G](?:m7♭5|maj7|dim|m7|m|7)?:(true|false)$/.test(id) ||
+    /^sus:change:[A-G](?:sus[24])?:[A-G](?:sus[24])?$/.test(id) ||
     /^strings:([1-6]):([1-6]):(actual|upward)$/.test(id) ||
     /^fret:[56]:[1-6]:(-1|0|1|2)$/.test(id)
   );

@@ -32,7 +32,7 @@ export function exerciseQuestion(exercise: Exercise, level: Level = 'mixed'): Qu
   const a = exercise.notes[0] ?? fallback,
     b = exercise.notes[1] ?? a;
   const choices =
-    exercise.kind === CHORD_MODES.sus[0] || exercise.kind === CHORD_MODES.sus[2]
+    exercise.kind === CHORD_MODES.sus[1]
       ? shuffle(exercise.choices)
       : exercise.kind === 'build-note' && level === 'basic'
         ? exercise.choices.filter((choice) => /^[A-G]$/.test(choice))
@@ -162,7 +162,7 @@ export function createSession(
             ? exerciseQuestion(exercise, level)
             : null;
       if (!q) break;
-      const key = q.exercise?.kind === CHORD_MODES.sus[2] ? q.exercise.answer[0] : questionKey(q);
+      const key = q.exercise?.kind === CHORD_MODES.sus[1] ? q.exercise.answer[0] : questionKey(q);
       if (!seen.has(key)) {
         seen.add(key);
         queue.push(q);

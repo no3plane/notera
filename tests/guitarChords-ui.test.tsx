@@ -38,7 +38,7 @@ describe('single-key guitar practice', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: '本组使用的按法' }), '6');
     await user.click(screen.getByRole('button', { name: '查看 viiø7 E♯m7♭5 指法' }));
     expect(screen.getByText(/减三和弦加上小七度音/)).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
+    await user.click(screen.getByRole('button', { name: '开始看题按弦 →' }));
     expect(document.querySelector('.guitar-prompt')?.textContent).toContain('Imaj7');
     await user.click(screen.getByRole('button', { name: '一点提示' }));
     expect(document.querySelector('.guitar-hints')?.textContent).toContain('大七和弦');
@@ -77,7 +77,7 @@ describe('single-key guitar practice', () => {
     for (const position of ['第五弦第 7 品', '第六弦空弦', '第六弦第 12 品']) {
       expect(screen.getByRole('group', { name: `Em · ${position}` })).toBeTruthy();
     }
-    await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
+    await user.click(screen.getByRole('button', { name: '开始看题按弦 →' }));
     for (let i = 0; i < 5; i++) {
       await user.click(screen.getByRole('button', { name: '按好了，核对指法' }));
       await user.click(screen.getByRole('button', { name: '下一题' }));
@@ -116,7 +116,7 @@ describe('single-key guitar practice', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: '本组调性' }), 'A');
     await user.selectOptions(screen.getByRole('combobox', { name: '本组使用的按法' }), '5');
     expect(readGuitarProgress().overrides.A?.[1]).toBe(5);
-    await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
+    await user.click(screen.getByRole('button', { name: '开始看题按弦 →' }));
     expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).disabled).toBe(
       true,
     );
@@ -164,7 +164,7 @@ describe('single-key guitar practice', () => {
     expect(
       (screen.getByRole('combobox', { name: '本组使用的按法' }) as HTMLSelectElement).value,
     ).toBe('6');
-    await user.click(screen.getByRole('button', { name: '开始随机级数 →' }));
+    await user.click(screen.getByRole('button', { name: '开始看题按弦 →' }));
     await user.click(screen.getByRole('button', { name: '结束本组' }));
     expect(readGuitarProgress().attempts).toHaveLength(0);
     expect(screen.getByText('本组完成 0 题。')).toBeTruthy();

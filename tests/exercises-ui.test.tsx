@@ -17,7 +17,9 @@ describe('new exercise flows', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: '单个和弦' }));
+    expect(screen.queryByRole('button', { name: '级数与和弦' })).toBeNull();
     await user.click(screen.getByRole('button', { name: '挂留和弦' }));
+    expect(screen.queryByRole('button', { name: '换一个音' })).toBeNull();
     const mode = '这个级数能挂什么？';
     await user.click(screen.getByRole('button', { name: mode }));
     const table = within(screen.getByRole('table', { name: /C 大调/ }));
@@ -36,7 +38,7 @@ describe('new exercise flows', () => {
     expect(readProgress()?.byKind?.['chord-sus-diatonic']?.correct).toBe(1);
 
     await user.click(screen.getByRole('button', { name: '七和弦' }));
-    expect(screen.getByRole('button', { name: '级数与和弦', pressed: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '和弦名 → 构成音', pressed: true })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '挂留和弦' }));
     await user.click(screen.getByRole('button', { name: mode }));
     expect(screen.getByRole('table', { name: /C 大调/ })).toBeTruthy();
@@ -237,10 +239,11 @@ describe('new exercise flows', () => {
       ).toBe(10);
     },
   );
-  it('does not assign number shortcuts to chord names or Roman degrees in degree practice', async () => {
+  it('does not assign number shortcuts to chord names in reverse tone practice', async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: '单个和弦' }));
+    await user.click(screen.getByRole('button', { name: '构成音 → 和弦名' }));
     for (let i = 0; i < 2; i++) {
       const exercise = currentExercise();
       const choices = within(screen.getByRole('group', { name: '选择答案' }));
@@ -253,7 +256,7 @@ describe('new exercise flows', () => {
       await user.click(choices.getByRole('button', { name: exercise.answer[0] }));
       await user.keyboard('{Enter}{Enter}');
     }
-    expect(readProgress()?.byKind?.['chord-degree']?.correct).toBe(2);
+    expect(readProgress()?.byKind?.['chord-tones-reverse']?.correct).toBe(2);
   });
   it('keeps a whole round in one type and exposes no retired or mixed modes', async () => {
     const user = userEvent.setup();

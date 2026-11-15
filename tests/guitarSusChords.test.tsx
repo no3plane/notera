@@ -40,11 +40,16 @@ it.each([
     fireEvent.click(screen.getByRole('button', { name: '挂留和弦' }));
     expect(
       within(screen.getByRole('group', { name: '练习题型' })).getByRole('button', {
-        name: '换一个音',
+        name: '和弦名 → 构成音',
         pressed: true,
       }),
     ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
+    const tasks = within(screen.getByRole('group', { name: '实琴练习内容' }));
+    expect(tasks.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
+    expect(tasks.getByRole('button', { name: '看题按弦', pressed: false })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '去练挂留连接' })).toBeNull();
+    expect(screen.queryByRole('group', { name: '本组练习步骤' })).toBeNull();
     const group = screen.getByRole('combobox', { name: '开放指法组' });
     fireEvent.change(group, { target: { value: root } });
     const sus2Diagram =
@@ -68,7 +73,19 @@ it.each([
     ).toEqual(progression);
     fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
-    fireEvent.click(screen.getByRole('button', { name: /开始随机切换/ }));
+    fireEvent.click(screen.getByRole('button', { name: '看题按弦' }));
+    expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
+    expect(
+      (screen.getByRole('combobox', { name: '开放指法组' }) as HTMLSelectElement).disabled,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
+    expect(screen.getAllByRole('img')).toHaveLength(3);
+    expect(
+      (screen.getByRole('combobox', { name: '开放指法组' }) as HTMLSelectElement).disabled,
+    ).toBe(false);
+    fireEvent.keyDown(document.body, { code: 'Space', key: ' ' });
+    expect(screen.getAllByRole('img')).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: '看题按弦' }));
     expect(screen.queryAllByRole('img')).toHaveLength(0);
 
     for (let i = 0; i < 4; i++) {
@@ -78,6 +95,10 @@ it.each([
     }
     expect(screen.getByRole('heading', { name: '本组练习完成' })).toBeTruthy();
     expect(screen.queryByRole('group', { name: '本题自评' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /进入和弦连接/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '返回指法参考 / 换组' }));
+    expect(screen.getAllByRole('img')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
     expect(readSusGuitarProgress()).toEqual({ root, attempts: [] });
 
     view.unmount();

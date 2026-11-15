@@ -20,7 +20,7 @@ describe('independent connection practice', () => {
       render(<App />);
       expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦连接');
       expect(screen.getByRole('table', { name: '四小节节拍谱' })).toBeTruthy();
-      expect(screen.queryByText(/开始随机级数|熟悉这一调/)).toBeNull();
+      expect(screen.queryByText(/开始看题按弦|熟悉这一调/)).toBeNull();
       click('开始节拍');
       expect(screen.getByRole('button', { name: '停止节拍' })).toBeTruthy();
       expect(readGuitarProgress().attempts).toHaveLength(0);
@@ -232,7 +232,7 @@ describe('independent connection practice', () => {
 it('ends a seven-degree round without forcing connections or offering retired tasks', () => {
   vi.spyOn(Math, 'random').mockReturnValue(0.999);
   render(<GuitarChordPractice />);
-  click('级数弹奏');
+  click('看题按弦');
   for (let i = 0; i < 7; i++) {
     click('按好了，核对指法');
     click(i === 6 ? '完成本组' : '下一题');
@@ -255,7 +255,7 @@ it.each(['guided', 'review'])('opens the reference safely for a saved retired %s
     within(screen.getByRole('group', { name: '实琴练习内容' }))
       .getAllByRole('button')
       .map((button) => button.textContent),
-  ).toEqual(['指法参考', '级数弹奏']);
+  ).toEqual(['指法参考', '看题按弦']);
   expect(screen.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
   expect(localStorage.getItem('notera.guitar-task.triad.v1')).toBe('reference');
   expect(readGuitarProgress()).toEqual(legacy);

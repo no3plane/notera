@@ -205,7 +205,7 @@ export function GuitarChordPractice({
         {(
           [
             ['reference', '指法参考'],
-            ['recall', '级数弹奏'],
+            ['recall', '看题按弦'],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -244,9 +244,9 @@ export function GuitarChordPractice({
                 查看这一调的七个顺阶{familyLabel}。推荐根音位置集中在 {region}，也可以替换按法。
               </p>
               <div className="guitar-overview-start">
-                <span>直接开始级数弹奏，或查看这一调的指法。</span>
+                <span>直接开始看题按弦，或查看这一调的指法。</span>
                 <button className="guitar-primary" onClick={start}>
-                  开始随机级数 →
+                  开始看题按弦 →
                 </button>
               </div>
               <div className="guitar-chord-strip" role="group" aria-label="本调七个和弦">
@@ -411,7 +411,7 @@ export function GuitarChordPractice({
         </div>
         <aside className="guitar-aside">
           <h3>这一组怎么练</h3>
-          <p>查看和弦指法，或直接开始随机级数弹奏。</p>
+          <p>查看和弦指法，或开始看题按弦，根据随机级数找出和弦。</p>
           <div className="guitar-formula">
             <span>大调{familyLabel}性质</span>
             {seventh ? (

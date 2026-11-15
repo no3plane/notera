@@ -544,19 +544,6 @@ body:has(.guitar-practice) .topic-tabs button {
 .guitar-sus .guitar-scope select {
   padding-inline: 10px 24px;
 }
-.guitar-sus-views {
-  margin: 20px 0 14px;
-  width: fit-content;
-}
-.guitar-sus-views button {
-  font-size: 12px;
-}
-.guitar-sus-views button.active {
-  box-shadow: none;
-}
-.guitar-sus-views button:not(.active) {
-  color: var(--guitar-secondary);
-}
 .guitar-loop-controls,
 .guitar-loop-controls label {
   display: flex;
@@ -703,7 +690,6 @@ body:has(.guitar-practice) .topic-tabs button {
 }
 @media (max-width: 600px) {
   .page-enter:has(.guitar-connection[data-playing]) > :is(.page-heading, .topic-tabs),
-  .guitar-sus:has(.guitar-connection[data-playing]) > :is(.guitar-scope, .guitar-sus-views),
   .guitar-connection[data-playing] .guitar-loop-controls label {
     display: none;
   }
