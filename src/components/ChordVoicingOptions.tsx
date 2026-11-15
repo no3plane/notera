@@ -29,7 +29,7 @@ export function ChordVoicingOptions({
           >
             <p className="guitar-voicing-position">{rootPosition(voicing)}</p>
             <span className={selected ? 'guitar-voicing-label is-chosen' : 'guitar-voicing-label'}>
-              {selected ? '本组选用' : '其他按法'}
+              {selected ? '练习选用' : '其他按法'}
             </span>
             <ChordDiagram chord={chord} voicing={voicing} compact />
             <button

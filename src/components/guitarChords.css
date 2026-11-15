@@ -143,6 +143,20 @@ body:has(.guitar-practice) .topic-tabs button {
   letter-spacing: -0.02em;
   outline: none;
 }
+.guitar-stage-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 16px 0 8px;
+}
+.guitar-stage-toolbar .guitar-stage-heading {
+  margin: 0;
+}
+.guitar-stage-toolbar .guitar-text-button {
+  font-size: 13px;
+}
 .guitar-description {
   color: var(--guitar-secondary);
   font-size: 13px;
@@ -408,7 +422,7 @@ body:has(.guitar-practice) .topic-tabs button {
   display: flex;
   justify-content: center;
   gap: 28px;
-  padding: 24px 0 32px;
+  padding: 12px 0 24px;
 }
 .guitar-prompt > div {
   text-align: center;
@@ -755,7 +769,8 @@ body:has(.guitar-practice) .topic-tabs button {
   }
 }
 @media (max-width: 600px) {
-  .guitar-scope {
+  .guitar-scope,
+  .chord-workspace .guitar-practice .guitar-scope {
     gap: 8px;
   }
   .guitar-overview-start {
@@ -839,7 +854,7 @@ body:has(.guitar-practice) .topic-tabs button {
   }
   .guitar-prompt {
     gap: 8px;
-    padding-top: 20px;
+    padding-top: 12px;
   }
   .guitar-prompt strong {
     font-size: 34px;

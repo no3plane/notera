@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 import { ChordVoicingOptions } from './ChordVoicingOptions';
 import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import { useAudio } from '../hooks/useAudio';
+import { useChordRecall } from '../hooks/useChordRecall';
 import {
   GUITAR_KEYS,
   chordsInKey,
   guitarProgressKey,
   readGuitarProgress,
-  recallQueue,
   recommendedVoicings,
   rootPosition,
   voicingFor,
@@ -20,7 +20,6 @@ import { name } from '../lib/theory';
 import type { ChordVoicing, GuitarKey, RootString } from '../lib/guitarChords';
 import './guitarChords.css';
 
-type Phase = 'overview' | 'recall' | 'summary';
 type Task = 'reference' | 'recall';
 function readTask(family: ChordFamily): Task {
   try {
@@ -49,26 +48,22 @@ export function GuitarChordPractice({
   const [storageError, setStorageError] = useState(false);
   const key = progress.key;
   const [task, setTask] = useState<Task>(() => initialTask ?? readTask(family));
-  const [phase, setPhase] = useState<Phase>(() => (task === 'recall' ? 'recall' : 'overview'));
-  const [queue, setQueue] = useState<number[][]>(() => (task === 'recall' ? recallQueue() : []));
-  const [index, setIndex] = useState(0);
-  const [hints, setHints] = useState(0);
-  const [revealed, setRevealed] = useState(false);
+  const recall = useChordRecall(7);
+  const { index, hints, revealed } = recall;
+  const [referenceOpen, setReferenceOpen] = useState(false);
   const [selected, setSelected] = useState(1);
-  const [completed, setCompleted] = useState(0);
   const [audioError, setAudioError] = useState('');
   const play = useAudio(setAudioError);
   const heading = useRef<HTMLHeadingElement>(null);
-  const nextLock = useRef(false);
   const chords = useMemo(() => chordsInKey(key, family), [key, family]);
   const recommended = useMemo(() => recommendedVoicings(chords), [chords]);
   const plan = chords.map((chord, i) => {
     const root = progress.overrides[key]?.[chord.degree];
     return root ? voicingFor(chord, root) : recommended[i];
   });
-  const active = phase !== 'overview' && phase !== 'summary' && queue.length > 0;
-  const degrees = queue[index] ?? [];
-  const visible = phase === 'overview' ? [selected] : degrees;
+  const overview = task === 'reference' || referenceOpen;
+  const active = !overview;
+  const degrees = [recall.item + 1];
   const positions = plan.map((v) => v.rootFret);
   const region = `${Math.min(...positions)}–${Math.max(...positions)} 品`;
   function listen(voicing: ChordVoicing) {
@@ -91,63 +86,37 @@ export function GuitarChordPractice({
       setStorageError(true);
     }
   }, [progress, family]);
-  useEffect(() => {
-    nextLock.current = false;
-  }, [phase, index]);
-
-  function nextStage(next: Phase, nextQueue: number[][] = []) {
-    setPhase(next);
-    setQueue(nextQueue);
-    setIndex(0);
-    setHints(0);
-    setRevealed(false);
+  function start() {
+    if (referenceOpen) {
+      setReferenceOpen(false);
+    } else if (onTaskChange) {
+      onTaskChange('recall');
+    } else {
+      setTask('recall');
+      recall.reset();
+    }
     heading.current?.focus();
   }
-  function start() {
-    if (onTaskChange && task !== 'recall') {
-      onTaskChange('recall');
-      return;
-    }
-    setTask('recall');
-    setCompleted(0);
-    nextStage('recall', recallQueue());
-  }
   function chooseTask(value: Task) {
+    if (value === task) return;
     setTask(value);
-    setCompleted(0);
-    if (value === 'recall') nextStage('recall', recallQueue());
-    else {
-      setSelected(1);
-      nextStage('overview');
-    }
+    setReferenceOpen(false);
+    setSelected(1);
+    recall.reset();
+    heading.current?.focus();
   }
   function next() {
-    if (phase !== 'recall' || !revealed || nextLock.current) return;
-    nextLock.current = true;
-    setCompleted((count) => count + 1);
-    if (index + 1 < queue.length) {
-      setIndex(index + 1);
-      setHints(0);
-      setRevealed(false);
-      heading.current?.focus();
-      return;
-    }
-    nextStage('summary');
-  }
-  function resetToOverview() {
-    if (onTaskChange) {
-      onTaskChange('reference');
-      return;
-    }
-    setTask('reference');
-    setCompleted(0);
-    setSelected(1);
-    nextStage('overview');
+    if (!active || !revealed) return;
+    recall.next();
+    setAudioError('');
+    heading.current?.focus();
   }
   function changeKey(value: GuitarKey) {
     setProgress((current) => ({ ...current, key: value }));
     setSelected(1);
-    setCompleted(0);
+    recall.reset();
+    setReferenceOpen(false);
+    setAudioError('');
     try {
       const connection = readConnectionProgress(family);
       connection.settings.key = value;
@@ -178,7 +147,7 @@ export function GuitarChordPractice({
       if (!active) return;
       if (event.code === 'Space') {
         event.preventDefault();
-        setRevealed(true);
+        recall.reveal();
       }
       if (revealed && event.key === 'Enter') {
         event.preventDefault();
@@ -197,14 +166,12 @@ export function GuitarChordPractice({
       <div className="guitar-scope">
         {familySwitch}
         <label>
-          本组调性
+          调性
           <select
-            aria-label="本组调性"
+            aria-label="练习调性"
             value={key}
-            disabled={active}
             onChange={(e) => {
               changeKey(e.target.value as GuitarKey);
-              if (task === 'recall') nextStage('recall', recallQueue());
             }}
           >
             {GUITAR_KEYS.map(([value]) => (
@@ -215,11 +182,6 @@ export function GuitarChordPractice({
           </select>
         </label>
         <span>标准调弦 E A D G B E · 根音在第五 / 六弦</span>
-        {active && (
-          <button className="guitar-text-button" onClick={() => nextStage('summary')}>
-            结束本组
-          </button>
-        )}
       </div>
       {!onTaskChange && (
         <div className="segmented single-chord-tasks" role="group" aria-label="实琴练习内容">
@@ -244,31 +206,40 @@ export function GuitarChordPractice({
         <div className="guitar-board">
           <div className="guitar-board-header">
             <span>{key} 大调</span>
-            <span>
-              {active
-                ? `级数 ${index + 1} / ${queue.length}`
-                : phase === 'summary'
-                  ? '练习结束'
-                  : `七个顺阶${familyLabel}`}
-            </span>
+            <span>{overview ? `七个顺阶${familyLabel}` : `本轮已练 ${index} / 7 个级数`}</span>
           </div>
-          <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
-            {phase === 'overview'
-              ? '先找到这一调的手感。'
-              : phase === 'summary'
-                ? '本组练习完成'
-                : '看到级数，找到和弦。'}
-          </h2>
+          <div className="guitar-stage-toolbar">
+            <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
+              {overview ? '先找到这一调的手感。' : '看到级数，找到和弦。'}
+            </h2>
+            {active && (
+              <button
+                className="guitar-text-button"
+                onClick={() => {
+                  setSelected(degrees[0]);
+                  setReferenceOpen(true);
+                  setAudioError('');
+                  heading.current?.focus();
+                }}
+              >
+                查看本调指法
+              </button>
+            )}
+          </div>
 
-          {phase === 'overview' ? (
+          {overview ? (
             <>
               <p className="guitar-description">
                 查看这一调的七个顺阶{familyLabel}。推荐根音位置集中在 {region}，也可以替换按法。
               </p>
               <div className="guitar-overview-start">
-                <span>直接开始看题按弦，或查看这一调的指法。</span>
+                <span>
+                  {referenceOpen
+                    ? '查完指法，回到刚才那一题。'
+                    : '直接开始看题按弦，或查看这一调的指法。'}
+                </span>
                 <button className="guitar-primary" onClick={start}>
-                  开始看题按弦 →
+                  {referenceOpen ? '返回当前题' : '开始看题按弦 →'}
                 </button>
               </div>
               <div className="guitar-chord-strip" role="group" aria-label="本调七个和弦">
@@ -304,9 +275,9 @@ export function GuitarChordPractice({
                   </p>
                   <p className="guitar-root-position">{rootPosition(plan[selected - 1])}</p>
                   <label>
-                    本组使用的按法
+                    练习使用的按法
                     <select
-                      aria-label="本组使用的按法"
+                      aria-label="练习使用的按法"
                       value={plan[selected - 1].rootString}
                       onChange={(e) => changeVoicing(Number(e.target.value) as RootString)}
                     >
@@ -340,29 +311,17 @@ export function GuitarChordPractice({
                 )}
               </div>
             </>
-          ) : phase === 'summary' ? (
-            <>
-              <p className="guitar-description">本组完成 {completed} 题。</p>
-              <div className="guitar-bottom guitar-summary-actions">
-                <button className="guitar-text-button" onClick={resetToOverview}>
-                  返回总览 / 换调
-                </button>
-                <button className="guitar-primary" onClick={start}>
-                  同调再练一组 →
-                </button>
-              </div>
-            </>
           ) : (
             <>
               <div
                 className="guitar-progress"
                 role="progressbar"
-                aria-label="当前阶段进度"
+                aria-label="本轮级数进度"
                 aria-valuemin={0}
-                aria-valuemax={queue.length}
+                aria-valuemax={7}
                 aria-valuenow={index}
               >
-                <span style={{ width: `${(index / queue.length) * 100}%` }} />
+                <span style={{ width: `${(index / 7) * 100}%` }} />
               </div>
               <p className="guitar-description">
                 先在吉他上按出来，再扫弦核对；想不起来时逐步看提示。
@@ -393,11 +352,11 @@ export function GuitarChordPractice({
                     <button
                       className="guitar-secondary"
                       disabled={hints >= 3}
-                      onClick={() => setHints((level) => Math.min(3, level + 1))}
+                      onClick={recall.hint}
                     >
                       {hints === 0 ? '一点提示' : hints < 3 ? '再提示一步' : '提示已展开'}
                     </button>
-                    <button className="guitar-primary" onClick={() => setRevealed(true)}>
+                    <button className="guitar-primary" onClick={recall.reveal}>
                       按好了，核对指法
                     </button>
                   </div>
@@ -408,7 +367,7 @@ export function GuitarChordPractice({
                   <div
                     className={`guitar-answer ${degrees.length > 1 ? 'guitar-answer-multiple' : ''}`}
                   >
-                    {visible.map((degree, i) => (
+                    {degrees.map((degree, i) => (
                       <div className="guitar-answer-chord" key={i}>
                         <h3>{chords[degree - 1].symbol}</h3>
                         <ChordVoicingOptions
@@ -423,7 +382,7 @@ export function GuitarChordPractice({
                   <p className="guitar-self-check">对照指法，逐弦检查声音。</p>
                   <div className="guitar-bottom">
                     <button className="guitar-primary" onClick={next}>
-                      {index + 1 === queue.length ? '完成本组' : '下一题'}
+                      下一题
                     </button>
                   </div>
                 </>
@@ -432,8 +391,8 @@ export function GuitarChordPractice({
           )}
         </div>
         <aside className="guitar-aside">
-          <h3>这一组怎么练</h3>
-          <p>查看和弦指法，或开始看题按弦，根据随机级数找出和弦。</p>
+          <h3>怎么练</h3>
+          <p>根据随机级数按出和弦。七个级数各练一次后自动继续，随时可以换调或查指法。</p>
           <div className="guitar-formula">
             <span>大调{familyLabel}性质</span>
             {seventh ? (
@@ -461,7 +420,7 @@ export function GuitarChordPractice({
           <details className="guitar-plan-explainer">
             <summary>推荐指法怎么选？</summary>
             <p>
-              综合考虑较低的品位、七个根音的分布，以及常见和弦连接时的移动距离。可在总览替换某个按法；本组开始后保持固定。
+              综合考虑较低的品位、七个根音的分布，以及常见和弦连接时的移动距离。可在指法参考中替换某个按法，练习时沿用你的选择。
             </p>
           </details>
         </aside>

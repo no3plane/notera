@@ -62,16 +62,20 @@ export function changedStrings([first, ...others]: readonly [Shape, ...Shape[]])
   );
 }
 
-export function susGuitarQueue(root: SusGuitarRoot) {
+export function susGuitarTasks(root: SusGuitarRoot) {
   const {
     comparison: [sus2, major, sus4],
   } = SUS_GUITAR_GROUPS[root];
-  return shuffle<readonly [Shape, Shape]>([
+  return [
     [major, sus2],
     [sus2, major],
     [major, sus4],
     [sus4, major],
-  ]);
+  ] as const;
+}
+
+export function susGuitarQueue(root: SusGuitarRoot) {
+  return shuffle(susGuitarTasks(root));
 }
 
 export type SusGuitarAttempt = { root: SusGuitarRoot | 'D'; rating: Rating };

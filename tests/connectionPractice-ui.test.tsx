@@ -227,15 +227,16 @@ describe('independent connection practice', () => {
   });
 });
 
-it('ends a seven-degree round without forcing connections or offering retired tasks', () => {
+it('continues after seven degrees without forcing connections or offering retired tasks', () => {
   vi.spyOn(Math, 'random').mockReturnValue(0.999);
   render(<GuitarChordPractice />);
   click('看题按弦');
   for (let i = 0; i < 7; i++) {
     click('按好了，核对指法');
-    click(i === 6 ? '完成本组' : '下一题');
+    click('下一题');
   }
-  expect(screen.getByText('本组完成 7 题。')).toBeTruthy();
+  expect(screen.getByText('本轮已练 0 / 7 个级数')).toBeTruthy();
+  expect(screen.getByRole('button', { name: '按好了，核对指法' })).toBeTruthy();
   expect(screen.queryByText('把这些级数连起来弹。')).toBeNull();
   expect(screen.queryByRole('button', { name: /推荐组合|卡点复练/ })).toBeNull();
 });

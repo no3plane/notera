@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { chordsInKey, voicingFor, voicingNotes } from '../src/lib/guitarChords';
 import {
@@ -33,7 +33,7 @@ it.each([
   ['E', ['A', 'D', 'E', 'A']],
   ['A', ['D', 'G', 'A', 'D']],
 ] as const)(
-  'shares the suspended family across topics and completes the %s group without ratings',
+  'shares the suspended family across topics and continuously practices the %s group without ratings',
   (root, progression) => {
     const view = render(<App />);
     fireEvent.click(screen.getByRole('button', { name: '和弦' }));
@@ -77,7 +77,7 @@ it.each([
     expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
     expect(
       (screen.getByRole('combobox', { name: '开放指法组' }) as HTMLSelectElement).disabled,
-    ).toBe(true);
+    ).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
     expect(screen.getAllByRole('img')).toHaveLength(3);
     expect(
@@ -93,10 +93,11 @@ it.each([
       expect(screen.getAllByRole('img')).toHaveLength(2);
       fireEvent.keyDown(document.body, { key: 'Enter' });
     }
-    expect(screen.getByRole('heading', { name: '本组练习完成' })).toBeTruthy();
+    expect(screen.getByText('本轮已练 0 / 4 次切换')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
     expect(screen.queryByRole('group', { name: '本题自评' })).toBeNull();
     expect(screen.queryByRole('button', { name: /进入和弦连接/ })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '返回指法参考 / 换组' }));
+    fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
     expect(screen.getAllByRole('img')).toHaveLength(3);
     expect(screen.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
     expect(readSusGuitarProgress()).toEqual({ root, attempts: [] });
@@ -117,4 +118,35 @@ it('opens E for an old D preference and retains both legacy groups’ self-ratin
   ];
   localStorage.setItem(SUS_GUITAR_PROGRESS_KEY, JSON.stringify({ root: 'D', attempts }));
   expect(readSusGuitarProgress()).toEqual({ root: 'E', attempts });
+});
+
+it('covers every suspended switch per cycle, opens inline reference and changes groups mid-question', () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.999);
+  history.replaceState(null, '', '/?practice=guitar-sus-chords&task=recall');
+  render(<App />);
+  const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  for (let cycle = 0; cycle < 2; cycle++) {
+    const seen = new Set<string>();
+    for (let i = 0; i < 4; i++) {
+      seen.add(document.querySelector('.guitar-sus-sequence')!.textContent!);
+      click('弹好了，核对指法');
+      click('下一题');
+    }
+    expect(seen.size).toBe(4);
+    expect(screen.getByText('本轮已练 0 / 4 次切换')).toBeTruthy();
+  }
+  const prompt = document.querySelector('.guitar-sus-sequence')!.textContent;
+  click('查看本组指法');
+  expect(screen.getAllByRole('img')).toHaveLength(3);
+  click('返回当前题');
+  expect(document.querySelector('.guitar-sus-sequence')!.textContent).toBe(prompt);
+  expect(screen.queryByRole('img')).toBeNull();
+  click('弹好了，核对指法');
+  fireEvent.change(screen.getByRole('combobox', { name: '开放指法组' }), {
+    target: { value: 'A' },
+  });
+  expect(screen.queryByRole('img')).toBeNull();
+  expect(screen.getByText('本轮已练 0 / 4 次切换')).toBeTruthy();
+  expect(document.querySelector('.guitar-sus-sequence')!.textContent).toBe('A → Asus2');
+  expect(readSusGuitarProgress().attempts).toEqual([]);
 });

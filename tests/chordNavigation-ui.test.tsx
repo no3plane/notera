@@ -63,17 +63,17 @@ it('shares changed keys and voicings between reference, recall and connections',
   render(<App />);
   click('和弦');
   click('指法参考');
-  choose('本组调性', 'G');
-  choose('本组使用的按法', '5');
+  choose('练习调性', 'G');
+  choose('练习使用的按法', '5');
   click('看题按弦');
-  expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).value).toBe('G');
+  expect((screen.getByRole('combobox', { name: '练习调性' }) as HTMLSelectElement).value).toBe('G');
   click('和弦连接');
   expect((screen.getByRole('combobox', { name: '连接调性' }) as HTMLSelectElement).value).toBe('G');
   choose('连接调性', 'D');
   fireEvent.click(screen.getByText(/查看本轮指法/, { selector: 'summary' }));
   choose('D 本轮按法', '5');
   click('指法参考');
-  expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).value).toBe('D');
+  expect((screen.getByRole('combobox', { name: '练习调性' }) as HTMLSelectElement).value).toBe('D');
   expect(readGuitarProgress().overrides.G?.[1]).toBe(5);
   expect(readGuitarProgress().overrides.D?.[1]).toBe(5);
   expect(readConnectionProgress('triad').settings.key).toBe('D');
@@ -92,14 +92,14 @@ it('stops playback when selecting another task', () => {
   expect(screen.getByRole('button', { name: '开始节拍' })).toBeTruthy();
 });
 
-it('keeps suspended recall selected when changing groups after completing a round', () => {
+it('continues suspended recall after a round and permits changing groups immediately', () => {
   history.replaceState(null, '', '/?practice=guitar-sus-chords&task=recall');
   render(<App />);
   for (let i = 0; i < 4; i++) {
     click('弹好了，核对指法');
-    click(i === 3 ? '完成本组' : '下一题');
+    click('下一题');
   }
-  expect(screen.getByRole('heading', { name: '本组练习完成' })).toBeTruthy();
+  expect(screen.getByText('本轮已练 0 / 4 次切换')).toBeTruthy();
   choose('开放指法组', 'A');
   expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
   expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
