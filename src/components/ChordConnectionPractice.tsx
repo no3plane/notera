@@ -13,19 +13,16 @@ import {
   voicingNotes,
 } from '../lib/guitarChords';
 import type { GuitarKey, RootString } from '../lib/guitarChords';
-import type { PracticeChordFamily } from '../lib/chordHarmony';
+import type { ChordFamily } from '../lib/chordHarmony';
 import {
   connectionStorageKey,
   connectionChordsInKey,
   readConnectionProgress,
 } from '../lib/connectionPractice';
 import type { ConnectionSettings } from '../lib/connectionPractice';
-import {
-  readSusGuitarProgress,
-  SUS_GUITAR_GROUPS,
-  SUS_GUITAR_PROGRESS_KEY,
-} from '../lib/guitarSusChords';
-import type { SusGuitarRoot } from '../lib/guitarSusChords';
+import { connectionSuspensions, SUSPENSION_USAGES } from '../lib/connectionSuspensions';
+import type { SuspensionBeat } from '../lib/connectionSuspensions';
+import { readSusGuitarProgress } from '../lib/guitarSusChords';
 import { ChordDiagram } from './ChordDiagram';
 import { ProgressionPicker } from './ProgressionPicker';
 import { CHORD_PROGRESSIONS, progressionDegree } from '../lib/chordProgressions';
@@ -33,52 +30,63 @@ import { name } from '../lib/theory';
 import './guitarChords.css';
 
 const beats = [1, 2, 3, 4];
-const susPatterns = [
-  { type: 'sus2', enter: 1, release: 3 },
-  { type: 'sus4', enter: 1, release: 3 },
-  { type: 'sus2', enter: 2, release: 4 },
-  { type: 'sus4', enter: 2, release: 4 },
-] as const;
 
 export function ChordConnectionPractice({
   family = 'triad',
   familySwitch,
-  fixedRoot,
 }: {
-  family?: PracticeChordFamily;
+  family?: ChordFamily;
   familySwitch?: ReactNode;
-  fixedRoot?: SusGuitarRoot;
 }) {
-  const sus = family === 'sus';
   const [progress, setProgress] = useState(() => {
-    const saved = readConnectionProgress(
-      family,
-      sus ? readSusGuitarProgress().root : readGuitarProgress(family).key,
-    );
-    if (fixedRoot) saved.settings.key = fixedRoot;
+    const saved = readConnectionProgress(family, readGuitarProgress(family).key);
+    // Old bookmarks and the old last-used entry now open the integrated exercise.
+    const params = new URLSearchParams(location.search);
+    try {
+      if (
+        params.get('practice') === 'sus-connection' ||
+        params.get('task') === 'resolve' ||
+        (!params.has('practice') &&
+          localStorage.getItem('notera.last-practice.v1') === 'sus-connection')
+      ) {
+        const legacy = readConnectionProgress('sus', readSusGuitarProgress().root);
+        saved.settings = {
+          ...saved.settings,
+          key: legacy.settings.key === 'A' ? 'D' : 'A',
+          progression: 0,
+          tempo: legacy.settings.tempo,
+          loops: legacy.settings.loops,
+          display: legacy.settings.display,
+          suspensions: true,
+        };
+      }
+    } catch {
+      /* Settings and playback remain available without browser storage. */
+    }
     return saved;
   });
   const { settings } = progress;
-  const { key, progression, tempo, loops, display } = settings;
-  const pattern = CHORD_PROGRESSIONS[sus ? 0 : progression];
+  const { key, progression, tempo, loops, display, suspensions, suspensionVersion } = settings;
+  const pattern = CHORD_PROGRESSIONS[progression];
   const minor = Boolean(pattern.minor);
-  const root = (key === 'A' ? 'A' : 'E') as SusGuitarRoot;
-  const harmonyKey = sus ? (root === 'E' ? 'A' : 'D') : key;
-  const [fingerings, setFingerings] = useState(() => readGuitarProgress(sus ? 'triad' : family));
-  const chords = useMemo(
-    () => connectionChordsInKey(harmonyKey, sus ? 'triad' : family, minor),
-    [harmonyKey, family, sus, minor],
+  const [fingerings, setFingerings] = useState(() => readGuitarProgress(family));
+  const chords = useMemo(() => connectionChordsInKey(key, family, minor), [key, family, minor]);
+  const plan = useMemo(() => {
+    const recommended = recommendedVoicings(chords);
+    return chords.map((chord, i) => {
+      const override = fingerings.overrides[key]?.[chord.degree];
+      return override ? voicingFor(chord, override) : recommended[i];
+    });
+  }, [chords, fingerings, key]);
+  const sequence = PROGRESSIONS[progression];
+  const cues = useMemo(
+    () =>
+      suspensions
+        ? connectionSuspensions(key, chords, plan, sequence, loops, suspensionVersion)
+        : [],
+    [suspensions, key, chords, plan, sequence, loops, suspensionVersion],
   );
-  const recommended = useMemo(() => recommendedVoicings(chords), [chords]);
-  const plan = chords.map((chord, i) => {
-    const override = fingerings.overrides[harmonyKey]?.[chord.degree];
-    return override ? voicingFor(chord, override) : recommended[i];
-  });
-  const sequence = sus ? PROGRESSIONS[0] : PROGRESSIONS[progression];
-  const cues = Array.from({ length: loops }, (_, i) => ({
-    ...susPatterns[i % susPatterns.length],
-    chord: `${root}${susPatterns[i % susPatterns.length].type}`,
-  }));
+  const [previewLoop, setPreviewLoop] = useState(0);
   const [storageError, setStorageError] = useState(false);
   const [audioError, setAudioError] = useState('');
   const play = useAudio(setAudioError);
@@ -94,18 +102,32 @@ export function ChordConnectionPractice({
   const offset = playingBeat % loopLength;
   const bar = Math.floor(offset / 4);
   const beatInBar = metro.phase === 'playing' ? (metro.beat % 4) + 1 : 0;
-  const target = sequence.indexOf(5);
-  const scoreLoop = Math.max(0, Math.min(loop, loops - 1));
-  const cue = sus && target >= 0 ? cues[scoreLoop] : undefined;
+  const scoreLoop = active
+    ? Math.max(0, Math.min(loop, loops - 1))
+    : Math.min(previewLoop, loops - 1);
+  const cue = cues[scoreLoop];
   const uniqueDegrees = [...new Set(sequence)];
+  const susShapes = [
+    ...new Map(
+      cues.flatMap((item) =>
+        item.bars.flatMap((bar) =>
+          bar.beats
+            .filter((beat) => beat.kind)
+            .map((beat) => [beat.shape.symbol, beat.shape] as const),
+        ),
+      ),
+    ).values(),
+  ];
   const nameOf = (degree: number) => chords[degree - 1].symbol;
   const degreeOf = (degree: number) => String(progressionDegree(degree, minor));
   const labelOf = (degree: number) => (display === 'names' ? nameOf(degree) : degreeOf(degree));
-  const context = sus
-    ? `${root} 组 · ${harmonyKey} 大调`
-    : minor
-      ? `${name(chords[5].root, false)} 小调 · 关系大调 ${key}`
-      : `${key} 大调`;
+  const susSuffix = (beat: SuspensionBeat) =>
+    beat.kind?.replace('maj7', 'maj⁷').replace(/^7/, '⁷') ?? '';
+  const beatLabel = (degree: number, beat: SuspensionBeat) =>
+    display === 'names' ? beat.shape.symbol : `${degreeOf(degree)}${susSuffix(beat)}`;
+  const nextBar = (loopIndex: number, barIndex: number) =>
+    cues[loopIndex].bars[barIndex + 1] ?? cues[loopIndex + 1]?.bars[0];
+  const context = minor ? `${name(chords[5].root, false)} 小调 · 关系大调 ${key}` : `${key} 大调`;
 
   useEffect(() => {
     try {
@@ -119,16 +141,17 @@ export function ChordConnectionPractice({
     if (!active && !complete) return;
     const panel = board.current;
     if (panel && panel.getBoundingClientRect().bottom > window.innerHeight) {
-      const controls = active && sus ? panel.querySelector('.guitar-loop-controls') : null;
+      const controls = active ? panel.querySelector('.guitar-loop-controls') : null;
       (controls ?? panel).scrollIntoView({ block: 'start' });
     }
-  }, [active, complete, sus]);
+  }, [active, complete]);
 
   function resetRound() {
     metro.stop();
   }
   function configure(patch: Partial<ConnectionSettings>) {
     resetRound();
+    setPreviewLoop(0);
     setProgress((current) => ({ ...current, settings: { ...current.settings, ...patch } }));
   }
   function start() {
@@ -138,71 +161,52 @@ export function ChordConnectionPractice({
   }
   function changeKey(value: GuitarKey) {
     configure({ key: value });
-    if (sus) {
-      try {
-        localStorage.setItem(
-          SUS_GUITAR_PROGRESS_KEY,
-          JSON.stringify({ ...readSusGuitarProgress(), root: value }),
-        );
-      } catch {
-        setStorageError(true);
-      }
-    } else {
-      try {
-        localStorage.setItem(
-          guitarProgressKey(family),
-          JSON.stringify({ ...readGuitarProgress(family), key: value }),
-        );
-      } catch {
-        setStorageError(true);
-      }
+    try {
+      localStorage.setItem(
+        guitarProgressKey(family),
+        JSON.stringify({ ...readGuitarProgress(family), key: value }),
+      );
+    } catch {
+      setStorageError(true);
     }
   }
   function changeVoicing(degree: number, rootString: RootString) {
+    resetRound();
     const next = {
       ...fingerings,
-      key: sus ? fingerings.key : key,
+      key,
       overrides: {
         ...fingerings.overrides,
-        [harmonyKey]: { ...fingerings.overrides[harmonyKey], [degree]: rootString },
+        [key]: { ...fingerings.overrides[key], [degree]: rootString },
       },
     };
     setFingerings(next);
     try {
-      localStorage.setItem(guitarProgressKey(sus ? 'triad' : family), JSON.stringify(next));
+      localStorage.setItem(guitarProgressKey(family), JSON.stringify(next));
     } catch {
       setStorageError(true);
     }
   }
 
   return (
-    <section
-      className="guitar-practice connection-practice"
-      aria-label={sus ? '挂留和弦连接练习' : '和弦连接练习'}
-    >
+    <section className="guitar-practice connection-practice" aria-label="和弦连接练习">
       <div className="connection-scope">
         {familySwitch}
-        {!fixedRoot && (
-          <label>
-            {sus ? '开放指法组' : minor ? '关系大调' : '调性'}
-            <select
-              aria-label={sus ? '开放指法组' : '连接调性'}
-              value={key}
-              disabled={active}
-              onChange={(e) => changeKey(e.target.value as GuitarKey)}
-            >
-              {(sus
-                ? GUITAR_KEYS.filter(([value]) => value === 'E' || value === 'A')
-                : GUITAR_KEYS
-              ).map(([value]) => (
-                <option key={value} value={value}>
-                  {value}
-                  {sus ? ' 组' : ' 大调'}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <label>
+          {minor ? '关系大调' : '调性'}
+          <select
+            aria-label="连接调性"
+            value={key}
+            disabled={active}
+            onChange={(e) => changeKey(e.target.value as GuitarKey)}
+          >
+            {GUITAR_KEYS.map(([value]) => (
+              <option key={value} value={value}>
+                {value} 大调
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="connection-layout">
         <section
@@ -212,23 +216,21 @@ export function ChordConnectionPractice({
         >
           <div className="guitar-board-header">
             <span>{context}</span>
-            <span>4/4 拍 · 每个和弦一小节</span>
+            <span>4/4 拍 · 每小节四拍</span>
           </div>
           <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
-            {sus ? '挂留与解决' : '常见进行连接'}
+            常见进行连接
           </h2>
-          {!sus && (
-            <div className="connection-setup">
-              <ProgressionPicker
-                value={progression}
-                onChange={(value) => configure({ progression: value })}
-                disabled={active}
-                chordKey={key}
-                family={family}
-                showNames={display === 'names'}
-              />
-            </div>
-          )}
+          <div className="connection-setup">
+            <ProgressionPicker
+              value={progression}
+              onChange={(value) => configure({ progression: value })}
+              disabled={active}
+              chordKey={key}
+              family={family}
+              showNames={display === 'names'}
+            />
+          </div>
           <p className="connection-sequence" aria-label="本轮进行">
             {sequence.map(labelOf).join(' → ')}
           </p>
@@ -237,39 +239,32 @@ export function ChordConnectionPractice({
               以小调主音为 1；包含属七和弦，251 还包含半减七和弦。
             </p>
           )}
-          <p className="connection-instruction">
-            {sus && target >= 0
-              ? '每圈的挂留与恢复拍点已全部列出，按谱跟弹。'
+          <div className="connection-suspensions">
+            <label className="connection-suspension-toggle">
+              <input
+                type="checkbox"
+                checked={suspensions}
+                disabled={active}
+                aria-describedby="connection-suspension-help"
+                onChange={(e) => configure({ suspensions: e.target.checked })}
+              />
+              加入挂留变化
+            </label>
+            {suspensions && (
+              <button
+                className="guitar-text-button"
+                disabled={active}
+                onClick={() => configure({ suspensionVersion: suspensionVersion + 1 })}
+              >
+                换一组变化
+              </button>
+            )}
+          </div>
+          <p className="connection-instruction" id="connection-suspension-help">
+            {suspensions
+              ? '每圈可有多处变化，混合恢复、保持、直接连接与连续换色；先看谱，熟悉后再换一组。'
               : '跟着拍点换和弦，下一小节第一拍落稳。'}
           </p>
-          {sus && target >= 0 && (
-            <table className="guitar-sus-plan" aria-label="整轮挂留安排">
-              <caption>
-                整轮挂留安排 · 第 {target + 1} 小节（{labelOf(5)}）
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">圈数</th>
-                  <th scope="col">挂上</th>
-                  <th scope="col">恢复</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cues.map((item, i) => (
-                  <tr key={i} aria-current={active && loop === i ? 'step' : undefined}>
-                    <th scope="row">第 {i + 1} 圈</th>
-                    <td>
-                      第 {item.enter} 拍换{' '}
-                      <strong>{display === 'names' ? item.chord : `5${item.type}`}</strong>
-                    </td>
-                    <td>
-                      第 {item.release} 拍恢复 <strong>{labelOf(5)}</strong>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
           <div className="guitar-loop-controls">
             <div className="connection-timing">
               <label>
@@ -321,7 +316,31 @@ export function ChordConnectionPractice({
                     ? '本轮连接完成'
                     : `共 ${loops} 圈 · 开始前预数四拍`}
           </p>
-          {sus && target >= 0 && <p className="guitar-loop-key">当前谱：第 {scoreLoop + 1} 圈</p>}
+          {cue && (
+            <div className="connection-score-preview">
+              <label>
+                {active ? '当前圈次' : '预览圈次'}
+                <select
+                  aria-label={active ? '当前圈次' : '预览圈次'}
+                  value={scoreLoop}
+                  disabled={active}
+                  onChange={(e) => setPreviewLoop(Number(e.target.value))}
+                >
+                  {cues.map((_, i) => (
+                    <option key={i} value={i}>
+                      第 {i + 1} 圈 · {cues[i].role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p>
+                {cue.role} · {cue.bars.filter((item) => item.usage !== 'plain').length} 个小节有变化
+              </p>
+            </div>
+          )}
+          {suspensions && !cue && (
+            <p className="connection-instruction">这组进行暂没有合适的挂留位置，按原进行练习。</p>
+          )}
           <table
             className="guitar-loop-score"
             aria-label={sequence.length === 4 ? '四小节节拍谱' : '连接节拍谱'}
@@ -342,28 +361,22 @@ export function ChordConnectionPractice({
             </thead>
             <tbody>
               {sequence.map((degree, i) => {
-                const rowCue = i === target ? cue : undefined;
-                const chord = nameOf(degree);
+                const rowCue = cue?.bars[i];
                 return (
                   <tr
                     key={i}
                     data-current={bar === i || undefined}
-                    data-target={(sus && i === target) || undefined}
+                    data-target={(rowCue && rowCue.usage !== 'plain') || undefined}
                   >
                     <th scope="row" aria-label={`第 ${i + 1} 小节 ${labelOf(degree)}`}>
                       <strong>{labelOf(degree)}</strong>
                       {display === 'names' && <small>{degreeOf(degree)} 级</small>}
                     </th>
                     {beats.map((value) => {
-                      const suspended = rowCue && value >= rowCue.enter && value < rowCue.release;
-                      const action =
-                        rowCue?.enter === value ? '挂上' : rowCue?.release === value ? '恢复' : '';
-                      const sounding =
-                        display === 'names'
-                          ? suspended
-                            ? rowCue!.chord
-                            : chord
-                          : `${degreeOf(degree)}${suspended ? rowCue!.chord.slice(-4) : ''}`;
+                      const cell = rowCue?.beats[value - 1];
+                      const suspended = Boolean(cell?.kind);
+                      const action = cell?.action ?? '';
+                      const sounding = cell ? beatLabel(degree, cell) : labelOf(degree);
                       const showChord = value === 1 || Boolean(action);
                       return (
                         <td
@@ -373,7 +386,32 @@ export function ChordConnectionPractice({
                           data-suspended={suspended || undefined}
                         >
                           {showChord ? (
-                            <strong>{sounding}</strong>
+                            <strong className={suspended ? 'connection-sus-symbol' : undefined}>
+                              {suspended ? (
+                                <>
+                                  <span>
+                                    {display === 'names'
+                                      ? name(chords[degree - 1].root, false)
+                                      : degreeOf(degree)}
+                                  </span>
+                                  <span>
+                                    {cell!.kind === 'maj7sus2' ? (
+                                      <>
+                                        {display === 'names' ? 'maj7' : 'maj⁷'}
+                                        <wbr />
+                                        sus2
+                                      </>
+                                    ) : display === 'names' ? (
+                                      cell!.kind
+                                    ) : (
+                                      susSuffix(cell!)
+                                    )}
+                                  </span>
+                                </>
+                              ) : (
+                                sounding
+                              )}
+                            </strong>
                           ) : (
                             <span aria-hidden="true">·</span>
                           )}
@@ -387,8 +425,82 @@ export function ChordConnectionPractice({
             </tbody>
           </table>
           <p className="guitar-loop-key">· 延续前一拍</p>
+          {cues.length > 0 && (
+            <details className="connection-suspension-plan">
+              <summary>查看整轮挂留安排 · {loops} 圈</summary>
+              <table className="guitar-sus-plan" aria-label="整轮挂留安排">
+                <thead>
+                  <tr>
+                    <th scope="col">圈次</th>
+                    <th scope="col">本圈安排</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cues.map((item, loopIndex) => (
+                    <tr
+                      key={loopIndex}
+                      aria-current={active && loop === loopIndex ? 'step' : undefined}
+                    >
+                      <th scope="row">
+                        第 {loopIndex + 1} 圈<small>{item.role}</small>
+                      </th>
+                      <td>
+                        {item.bars
+                          .filter((bar) => bar.usage !== 'plain')
+                          .map((bar) => {
+                            const next = nextBar(loopIndex, bar.bar);
+                            return (
+                              <div className="connection-plan-bar" key={bar.bar}>
+                                <p>
+                                  第 {bar.bar + 1} 小节 · {SUSPENSION_USAGES[bar.usage]}
+                                </p>
+                                <p className="connection-plan-beats">
+                                  {bar.beats.map(
+                                    (beat, i) =>
+                                      (i === 0 || beat.action) && (
+                                        <span key={i}>
+                                          第 {i + 1} 拍{' '}
+                                          <strong>{beatLabel(bar.degree, beat)}</strong>
+                                        </span>
+                                      ),
+                                  )}
+                                </p>
+                                {bar.beats[3].kind && (
+                                  <p className="connection-plan-next">
+                                    {next ? (
+                                      <>
+                                        接 <strong>{beatLabel(next.degree, next.beats[0])}</strong>
+                                        （下一小节）
+                                      </>
+                                    ) : (
+                                      '保持至本轮结束'
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        {item.bars.every((bar) => bar.usage === 'plain') && (
+                          <p>按原进行，留出呼吸。</p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="guitar-loop-key">
+                四圈依次为主题、呼应、展开、收束；挂留可以保持或直接连接，不必每次恢复。
+              </p>
+              {family === 'seventh' && (
+                <p className="guitar-loop-key">
+                  挂留保留原七音：maj7sus2 留大七音，7sus2 / 7sus4
+                  留小七音；恢复时回到原来的大七、小七或属七和弦。
+                </p>
+              )}
+            </details>
+          )}
           {metro.notice && <p role="status">{metro.notice}</p>}
-          {complete && !sus && (
+          {complete && (
             <button
               className="guitar-text-button"
               onClick={() => configure({ progression: (progression + 1) % PROGRESSIONS.length })}
@@ -406,10 +518,7 @@ export function ChordConnectionPractice({
               onChange={(e) =>
                 setProgress((current) => ({
                   ...current,
-                  settings: {
-                    ...current.settings,
-                    display: e.target.value as 'names' | 'degrees',
-                  },
+                  settings: { ...current.settings, display: e.target.value as 'names' | 'degrees' },
                 }))
               }
             >
@@ -418,38 +527,31 @@ export function ChordConnectionPractice({
             </select>
           </label>
           <details className="connection-reference">
-            <summary>查看本轮指法 · {uniqueDegrees.length} 个和弦</summary>
+            <summary>查看本轮指法 · {uniqueDegrees.length + susShapes.length} 个和弦</summary>
             {uniqueDegrees.map((degree) => {
               const chord = chords[degree - 1];
-              const shape =
-                sus && degree === 5
-                  ? SUS_GUITAR_GROUPS[root].comparison[1].voicing
-                  : plan[degree - 1];
+              const shape = plan[degree - 1];
               return (
                 <div className="connection-shape" key={degree}>
                   <h3>
                     {chord.symbol} <small>{degreeOf(degree)} 级</small>
                   </h3>
                   <ChordDiagram chord={chord} voicing={shape} />
-                  {!sus && (
-                    <label>
-                      本轮按法
-                      <select
-                        aria-label={`${chord.symbol} 本轮按法`}
-                        disabled={active}
-                        value={shape.rootString}
-                        onChange={(e) =>
-                          changeVoicing(degree, Number(e.target.value) as RootString)
-                        }
-                      >
-                        {([5, 6] as const).map((value) => (
-                          <option key={value} value={value}>
-                            {rootPosition(voicingFor(chord, value))}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                  <label>
+                    本轮按法
+                    <select
+                      aria-label={`${chord.symbol} 本轮按法`}
+                      disabled={active}
+                      value={shape.rootString}
+                      onChange={(e) => changeVoicing(degree, Number(e.target.value) as RootString)}
+                    >
+                      {([5, 6] as const).map((value) => (
+                        <option key={value} value={value}>
+                          {rootPosition(voicingFor(chord, value))}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     className="guitar-text-button"
                     onClick={() => {
@@ -462,24 +564,21 @@ export function ChordConnectionPractice({
                 </div>
               );
             })}
-            {sus &&
-              SUS_GUITAR_GROUPS[root].comparison
-                .filter((shape) => shape.symbol !== root)
-                .map((shape) => (
-                  <div className="connection-shape" key={shape.symbol}>
-                    <h3>{shape.symbol}</h3>
-                    <ChordDiagram chord={shape} voicing={shape.voicing} />
-                    <button
-                      className="guitar-text-button"
-                      onClick={() => {
-                        setAudioError('');
-                        void play(voicingNotes(shape.voicing));
-                      }}
-                    >
-                      试听 {shape.symbol}
-                    </button>
-                  </div>
-                ))}
+            {susShapes.map((shape) => (
+              <div className="connection-shape" key={shape.symbol}>
+                <h3>{shape.symbol}</h3>
+                <ChordDiagram chord={shape} voicing={shape.voicing} />
+                <button
+                  className="guitar-text-button"
+                  onClick={() => {
+                    setAudioError('');
+                    void play(voicingNotes(shape.voicing));
+                  }}
+                >
+                  试听 {shape.symbol}
+                </button>
+              </div>
+            ))}
             {audioError && <p role="status">{audioError}</p>}
           </details>
           {storageError && <p role="status">浏览器暂时无法保存设置，当前仍可继续练习。</p>}

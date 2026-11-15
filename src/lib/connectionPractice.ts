@@ -30,6 +30,8 @@ export interface ConnectionSettings {
   tempo: number;
   loops: number;
   display: 'names' | 'degrees';
+  suspensions: boolean;
+  suspensionVersion: number;
 }
 export interface ConnectionAttempt {
   at: number;
@@ -73,6 +75,8 @@ export function readConnectionProgress(
     tempo: 60,
     loops: 4,
     display: 'names',
+    suspensions: false,
+    suspensionVersion: Math.floor(Math.random() * 1000),
   };
   const fallback = { settings, attempts: [] };
   try {
@@ -90,6 +94,9 @@ export function readConnectionProgress(
     if (isTempo(saved.tempo)) settings.tempo = saved.tempo;
     if (isLoops(saved.loops)) settings.loops = saved.loops;
     if (saved.display === 'names' || saved.display === 'degrees') settings.display = saved.display;
+    if (typeof saved.suspensions === 'boolean') settings.suspensions = saved.suspensions;
+    if (Number.isSafeInteger(saved.suspensionVersion) && saved.suspensionVersion >= 0)
+      settings.suspensionVersion = saved.suspensionVersion;
     const attempts: ConnectionAttempt[] = Array.isArray(data.attempts)
       ? data.attempts
           .filter(

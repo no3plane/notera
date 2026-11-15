@@ -25,7 +25,6 @@ export const CHORD_TASK_GROUPS = [
     tasks: [
       { id: 'recall', label: '看题按弦' },
       { id: 'connection', label: '和弦连接' },
-      { id: 'resolve', label: '挂留与解决', susOnly: true },
     ],
   },
   { label: '查指法', tasks: [{ id: 'reference', label: '指法参考' }] },
@@ -43,8 +42,6 @@ export function modeForChordTask(task: ChordTask, family: PracticeChordFamily): 
       return CHORD_MODES[family][1];
     case 'diatonic':
       return DIATONIC_SUS_MODE;
-    case 'resolve':
-      return CONNECTION_MODES.sus;
     case 'connection':
       return CONNECTION_MODES[family === 'sus' ? 'triad' : family];
     default:
@@ -54,7 +51,7 @@ export function modeForChordTask(task: ChordTask, family: PracticeChordFamily): 
 
 export function defaultChordTask(mode: Mode): ChordTask {
   if (mode === DIATONIC_SUS_MODE) return 'diatonic';
-  if (isConnectionMode(mode)) return mode === CONNECTION_MODES.sus ? 'resolve' : 'connection';
+  if (isConnectionMode(mode)) return 'connection';
   if (isGuitarChordMode(mode)) return 'reference';
   const family = chordFamilyForMode(mode);
   return family && mode === CHORD_MODES[family][1] ? 'identify' : 'tones';
@@ -68,6 +65,8 @@ const matches = (mode: Mode, task: unknown): task is ChordTask => {
 export function readLastChordPractice(): { mode: Mode; task: ChordTask } | undefined {
   try {
     const saved = JSON.parse(localStorage.getItem(CHORD_NAVIGATION_KEY) ?? 'null');
+    if (saved?.mode === CONNECTION_MODES.sus || saved?.task === 'resolve')
+      return { mode: CONNECTION_MODES.triad, task: 'connection' };
     if (saved && isPracticeMode(saved.mode) && matches(saved.mode, saved.task)) return saved;
   } catch {
     /* Navigation works without storage. */
@@ -76,7 +75,7 @@ export function readLastChordPractice(): { mode: Mode; task: ChordTask } | undef
 
 export function readChordTask(mode: Mode): ChordTask {
   const params = new URLSearchParams(location.search);
-  const explicit = params.get('task');
+  const explicit = params.get('task') === 'resolve' ? 'connection' : params.get('task');
   if (matches(mode, explicit)) return explicit;
   const saved = readLastChordPractice();
   if (!params.has('practice') && saved?.mode === mode) return saved.task;

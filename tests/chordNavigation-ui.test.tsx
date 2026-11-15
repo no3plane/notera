@@ -31,7 +31,7 @@ it('removes pair practice from desktop, mobile and connection controls', () => {
   expect(screen.queryByRole('button', { name: '两和弦专项' })).toBeNull();
   expect(
     within(screen.getByRole('combobox', { name: '当前练习' })).getAllByRole('option'),
-  ).toHaveLength(7);
+  ).toHaveLength(6);
   expect(screen.queryByRole('option', { name: '两和弦专项' })).toBeNull();
   click('和弦连接');
   expect(screen.queryByText('拆开练一对')).toBeNull();
@@ -52,8 +52,14 @@ it('uses the grouped mobile task selector and goes directly to suspended-only ta
   choose('当前练习', 'diatonic');
   expect(screen.getByRole('table', { name: /C 大调/ })).toBeTruthy();
   expect(screen.getByRole('button', { name: '挂留和弦', pressed: true })).toBeTruthy();
-  choose('当前练习', 'resolve');
-  expect(screen.getByRole('table', { name: '整轮挂留安排' })).toBeTruthy();
+  expect(screen.queryByRole('option', { name: /挂留与解决/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: '挂留与解决' })).toBeNull();
+  choose('当前练习', 'connection');
+  expect((screen.getByRole('checkbox', { name: '加入挂留变化' }) as HTMLInputElement).checked).toBe(
+    true,
+  );
+  expect(screen.getByRole('button', { name: '三和弦', pressed: true })).toBeTruthy();
+  choose('当前练习', 'diatonic');
   choose('当前练习', 'recall');
   expect(screen.queryByRole('img')).toBeNull();
   expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();

@@ -29,12 +29,9 @@ it.each(SUS_GUITAR_ROOTS)(
   },
 );
 
-it.each([
-  ['E', ['A', 'D', 'E', 'A']],
-  ['A', ['D', 'G', 'A', 'D']],
-] as const)(
+it.each(SUS_GUITAR_ROOTS)(
   'shares the suspended family across topics and continuously practices the %s group without ratings',
-  (root, progression) => {
+  (root) => {
     const view = render(<App />);
     fireEvent.click(screen.getByRole('button', { name: '和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '挂留和弦' }));
@@ -65,14 +62,18 @@ it.each([
         ? ['R 5 R × 5 2', 'R 5 R 3 5 R', 'R 5 R 4 5 R']
         : ['× R 5 R 2 5', '× R 5 R 3 5', '× R 5 R 4 5'],
     );
-    fireEvent.click(screen.getByRole('button', { name: '挂留与解决' }));
+    fireEvent.click(screen.getByRole('button', { name: '和弦连接' }));
+    expect(
+      (screen.getByRole('checkbox', { name: '加入挂留变化' }) as HTMLInputElement).checked,
+    ).toBe(true);
     expect(
       within(screen.getByRole('table', { name: '四小节节拍谱' }))
         .getAllByRole('rowheader')
         .map((bar) => bar.querySelector('strong')?.textContent),
-    ).toEqual(progression);
+    ).toEqual(['C', 'G', 'Am', 'F']);
     fireEvent.click(screen.getByRole('button', { name: '和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
+    fireEvent.click(screen.getByRole('button', { name: '挂留和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '看题按弦' }));
     expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
     expect(

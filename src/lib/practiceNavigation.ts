@@ -11,15 +11,16 @@ export const isPracticeMode = (value: unknown): value is Mode =>
   typeof value === 'string' && modes.includes(value);
 
 const retiredModes: Record<string, Mode> = {
+  'sus-connection': 'chord-connection',
   'chord-degree': 'chord-tones-forward',
   'chord-seventh-degree': 'chord-seventh-tones-forward',
   'chord-sus-change': 'chord-sus-tones-forward',
 };
 const currentMode = (value: string | null): Mode | undefined =>
-  isPracticeMode(value)
-    ? value
-    : value && Object.hasOwn(retiredModes, value)
-      ? retiredModes[value]
+  value && Object.hasOwn(retiredModes, value)
+    ? retiredModes[value]
+    : isPracticeMode(value)
+      ? value
       : undefined;
 
 export function readPracticeMode(): Mode {

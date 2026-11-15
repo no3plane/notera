@@ -57,7 +57,9 @@ describe('independent connection practice', () => {
     );
     click('开始节拍');
     click('停止节拍');
-    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(
+      (screen.getByRole('checkbox', { name: '加入挂留变化' }) as HTMLInputElement).checked,
+    ).toBe(false);
     expect(screen.queryByText(/自评|感受|有停顿|有犹豫|最近的连接/)).toBeNull();
     expect(readConnectionProgress('triad').attempts).toHaveLength(0);
     expect(readGuitarProgress()).toEqual(legacy);

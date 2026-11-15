@@ -77,7 +77,7 @@ export const KIND_LABELS: Record<Mode, string> = {
   'guitar-sus-chords': '实琴和弦',
   'chord-connection': '常见进行',
   'seventh-connection': '常见进行',
-  'sus-connection': '挂留与解决',
+  'sus-connection': '和弦连接',
 };
 type Topic = { label: string } & (
   { modes: readonly Mode[] } | { chordModes: Record<PracticeChordFamily, readonly Mode[]> }
@@ -92,7 +92,7 @@ export const TOPICS: Topic[] = [
     chordModes: {
       triad: [...CHORD_MODES.triad, GUITAR_CHORD_MODES.triad, CONNECTION_MODES.triad],
       seventh: [...CHORD_MODES.seventh, GUITAR_CHORD_MODES.seventh, CONNECTION_MODES.seventh],
-      sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus, CONNECTION_MODES.sus],
+      sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus],
     },
   },
 ];
@@ -113,7 +113,7 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'guitar-sus-chords': '从第六弦 E 型和第五弦 A 型出发，练习挂留和弦的换音与解决。',
   'chord-connection': '选一个进行，跟随节拍练习连续换指。',
   'seventh-connection': '选一个七和弦进行，练习连续换指与落拍。',
-  'sus-connection': '在四小节进行里练习挂上与解决，保持下一小节的第一拍。',
+  'sus-connection': '在和弦连接中加入挂留变化。',
 };
 export interface Exercise {
   id: string;

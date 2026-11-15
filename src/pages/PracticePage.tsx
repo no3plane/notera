@@ -7,6 +7,7 @@ import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import { GuitarSusPractice } from '../components/GuitarSusPractice';
 import { ChordConnectionPractice } from '../components/ChordConnectionPractice';
 import { ChordTaskNavigation } from '../components/ChordTaskNavigation';
+import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import {
   CHORD_NAVIGATION_KEY,
   CHORD_TASK_GROUPS,
@@ -75,25 +76,27 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     start('basic', value);
   }
   function changeTask(task: ChordTask) {
+    if (task === 'connection' && family === 'sus') {
+      try {
+        const saved = readConnectionProgress('triad');
+        saved.settings.suspensions = true;
+        localStorage.setItem(connectionStorageKey('triad'), JSON.stringify(saved));
+      } catch {
+        /* Keep navigation available without storage. */
+      }
+    }
     changeMode(modeForChordTask(task, family ?? preferredFamily), task);
   }
   function changeFamily(value: PracticeChordFamily) {
     if (value === family) return;
     setPreferredFamily(value);
     saveChordFamily(value);
-    const task =
-      chordTask === 'connection' && value === 'sus'
-        ? 'resolve'
-        : chordTask === 'resolve' && value !== 'sus'
-          ? 'connection'
-          : chordTask === 'diatonic' && value !== 'sus'
-            ? 'tones'
-            : chordTask;
+    const task = chordTask === 'diatonic' && value !== 'sus' ? 'tones' : chordTask;
     changeMode(modeForChordTask(task, value), task);
   }
   const familySwitch = family && (
     <div className="segmented chord-family" role="group" aria-label="和弦类型">
-      {PRACTICE_CHORD_FAMILIES.map((value) => (
+      {PRACTICE_CHORD_FAMILIES.filter((value) => !connection || value !== 'sus').map((value) => (
         <button
           key={value}
           className={family === value ? 'active' : ''}
@@ -269,7 +272,7 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           {connection ? (
             <ChordConnectionPractice
               key={`${family}:${chordTask}`}
-              family={family!}
+              family={family === 'seventh' ? 'seventh' : 'triad'}
               familySwitch={familySwitch}
             />
           ) : guitar ? (
