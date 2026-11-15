@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChordVoicingOptions } from './ChordVoicingOptions';
+import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import { useAudio } from '../hooks/useAudio';
 import {
   GUITAR_KEYS,
@@ -33,17 +34,21 @@ export function GuitarChordPractice({
   family = 'triad',
   familySwitch,
   onConnect,
+  initialTask,
+  onTaskChange,
 }: {
   family?: ChordFamily;
   familySwitch?: ReactNode;
   onConnect?: () => void;
+  initialTask?: Task;
+  onTaskChange?: (task: Task) => void;
 }) {
   const [progress, setProgress] = useState(() => readGuitarProgress(family));
   const seventh = family === 'seventh';
   const familyLabel = CHORD_FAMILY_LABELS[family];
   const [storageError, setStorageError] = useState(false);
   const key = progress.key;
-  const [task, setTask] = useState<Task>(() => readTask(family));
+  const [task, setTask] = useState<Task>(() => initialTask ?? readTask(family));
   const [phase, setPhase] = useState<Phase>(() => (task === 'recall' ? 'recall' : 'overview'));
   const [queue, setQueue] = useState<number[][]>(() => (task === 'recall' ? recallQueue() : []));
   const [index, setIndex] = useState(0);
@@ -99,6 +104,10 @@ export function GuitarChordPractice({
     heading.current?.focus();
   }
   function start() {
+    if (onTaskChange && task !== 'recall') {
+      onTaskChange('recall');
+      return;
+    }
     setTask('recall');
     setCompleted(0);
     nextStage('recall', recallQueue());
@@ -126,6 +135,10 @@ export function GuitarChordPractice({
     nextStage('summary');
   }
   function resetToOverview() {
+    if (onTaskChange) {
+      onTaskChange('reference');
+      return;
+    }
     setTask('reference');
     setCompleted(0);
     setSelected(1);
@@ -135,6 +148,13 @@ export function GuitarChordPractice({
     setProgress((current) => ({ ...current, key: value }));
     setSelected(1);
     setCompleted(0);
+    try {
+      const connection = readConnectionProgress(family);
+      connection.settings.key = value;
+      localStorage.setItem(connectionStorageKey(family), JSON.stringify(connection));
+    } catch {
+      setStorageError(true);
+    }
   }
   function changeVoicing(root: RootString) {
     setProgress((current) => ({
@@ -201,23 +221,25 @@ export function GuitarChordPractice({
           </button>
         )}
       </div>
-      <div className="segmented single-chord-tasks" role="group" aria-label="实琴练习内容">
-        {(
-          [
-            ['reference', '指法参考'],
-            ['recall', '看题按弦'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            className={task === value ? 'active' : ''}
-            aria-pressed={task === value}
-            onClick={() => chooseTask(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {!onTaskChange && (
+        <div className="segmented single-chord-tasks" role="group" aria-label="实琴练习内容">
+          {(
+            [
+              ['reference', '指法参考'],
+              ['recall', '看题按弦'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              className={task === value ? 'active' : ''}
+              aria-pressed={task === value}
+              onClick={() => chooseTask(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="guitar-layout">
         <div className="guitar-board">
           <div className="guitar-board-header">

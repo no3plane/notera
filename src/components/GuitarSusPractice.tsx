@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAudio } from '../hooks/useAudio';
 import { voicingNotes } from '../lib/guitarChords';
+import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import {
   changedStrings,
   readSusGuitarProgress,
@@ -22,11 +23,28 @@ type Round = {
   revealed: boolean;
 };
 
-export function GuitarSusPractice({ familySwitch }: { familySwitch?: ReactNode }) {
+export function GuitarSusPractice({
+  familySwitch,
+  initialTask,
+  onTaskChange,
+}: {
+  familySwitch?: ReactNode;
+  initialTask?: 'reference' | 'recall';
+  onTaskChange?: (task: 'reference' | 'recall') => void;
+}) {
   const [{ progress, round }, setPractice] = useState<{
     progress: SusGuitarProgress;
     round: Round | null;
-  }>(() => ({ progress: readSusGuitarProgress(), round: null }));
+  }>(() => {
+    const progress = readSusGuitarProgress();
+    return {
+      progress,
+      round:
+        initialTask === 'recall'
+          ? { queue: susGuitarQueue(progress.root), index: 0, revealed: false }
+          : null,
+    };
+  });
   const [storageError, setStorageError] = useState(false);
   const [audioError, setAudioError] = useState('');
   const play = useAudio(setAudioError);
@@ -50,6 +68,10 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch?: ReactNode }
   }, [progress]);
 
   function start() {
+    if (onTaskChange && !round) {
+      onTaskChange('recall');
+      return;
+    }
     const queue = susGuitarQueue(root);
     setPractice((current) => ({ ...current, round: { queue, index: 0, revealed: false } }));
     heading.current?.focus();
@@ -111,9 +133,19 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch?: ReactNode }
             onChange={(event) => {
               const nextRoot = event.target.value as SusGuitarRoot;
               setPractice((current) => ({
-                round: null,
+                round:
+                  initialTask === 'recall'
+                    ? { queue: susGuitarQueue(nextRoot), index: 0, revealed: false }
+                    : null,
                 progress: { ...current.progress, root: nextRoot },
               }));
+              try {
+                const connection = readConnectionProgress('sus');
+                connection.settings.key = nextRoot;
+                localStorage.setItem(connectionStorageKey('sus'), JSON.stringify(connection));
+              } catch {
+                setStorageError(true);
+              }
             }}
           >
             {SUS_GUITAR_ROOTS.map((value) => (
@@ -125,24 +157,26 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch?: ReactNode }
         </label>
         <span>标准调弦 E A D G B E</span>
       </div>
-      <div className="segmented single-chord-tasks" role="group" aria-label="实琴练习内容">
-        <button
-          className={round === null ? 'active' : ''}
-          aria-pressed={round === null}
-          onClick={() => {
-            setPractice((current) => ({ ...current, round: null }));
-          }}
-        >
-          指法参考
-        </button>
-        <button
-          className={round !== null ? 'active' : ''}
-          aria-pressed={round !== null}
-          onClick={start}
-        >
-          看题按弦
-        </button>
-      </div>
+      {!onTaskChange && (
+        <div className="segmented single-chord-tasks" role="group" aria-label="实琴练习内容">
+          <button
+            className={round === null ? 'active' : ''}
+            aria-pressed={round === null}
+            onClick={() => {
+              setPractice((current) => ({ ...current, round: null }));
+            }}
+          >
+            指法参考
+          </button>
+          <button
+            className={round !== null ? 'active' : ''}
+            aria-pressed={round !== null}
+            onClick={start}
+          >
+            看题按弦
+          </button>
+        </div>
+      )}
       <div className="guitar-layout">
         <div className="guitar-board">
           <div className="guitar-board-header">
@@ -248,6 +282,10 @@ export function GuitarSusPractice({ familySwitch }: { familySwitch?: ReactNode }
                 <button
                   className="guitar-text-button"
                   onClick={() => {
+                    if (onTaskChange) {
+                      onTaskChange('reference');
+                      return;
+                    }
                     setPractice((current) => ({ ...current, round: null }));
                     heading.current?.focus();
                   }}

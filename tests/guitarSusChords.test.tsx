@@ -36,7 +36,7 @@ it.each([
   'shares the suspended family across topics and completes the %s group without ratings',
   (root, progression) => {
     const view = render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '和弦' }));
     fireEvent.click(screen.getByRole('button', { name: '挂留和弦' }));
     expect(
       within(screen.getByRole('group', { name: '练习题型' })).getByRole('button', {
@@ -44,8 +44,8 @@ it.each([
         pressed: true,
       }),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
-    const tasks = within(screen.getByRole('group', { name: '实琴练习内容' }));
+    fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
+    const tasks = within(screen.getByRole('group', { name: '练习题型' }));
     expect(tasks.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
     expect(tasks.getByRole('button', { name: '看题按弦', pressed: false })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '去练挂留连接' })).toBeNull();
@@ -65,14 +65,14 @@ it.each([
         ? ['R 5 R × 5 2', 'R 5 R 3 5 R', 'R 5 R 4 5 R']
         : ['× R 5 R 2 5', '× R 5 R 3 5', '× R 5 R 4 5'],
     );
-    fireEvent.click(screen.getByRole('button', { name: '和弦连接' }));
+    fireEvent.click(screen.getByRole('button', { name: '挂留与解决' }));
     expect(
       within(screen.getByRole('table', { name: '四小节节拍谱' }))
         .getAllByRole('rowheader')
         .map((bar) => bar.querySelector('strong')?.textContent),
     ).toEqual(progression);
-    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
-    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
     fireEvent.click(screen.getByRole('button', { name: '看题按弦' }));
     expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
     expect(
@@ -103,8 +103,8 @@ it.each([
 
     view.unmount();
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: '单个和弦' }));
-    fireEvent.click(screen.getByRole('button', { name: '实琴和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '和弦' }));
+    fireEvent.click(screen.getByRole('button', { name: '指法参考' }));
     expect(screen.getByRole('option', { name: `${root} 组`, selected: true })).toBeTruthy();
     expect(screen.queryByText('已练自评')).toBeNull();
   },

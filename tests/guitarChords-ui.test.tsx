@@ -101,10 +101,10 @@ describe('single-key guitar practice', () => {
   it('is available beside the existing theory exercises', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: '单个和弦' }));
-    await user.click(screen.getByRole('button', { name: '实琴和弦' }));
+    await user.click(screen.getByRole('button', { name: '和弦' }));
+    await user.click(screen.getByRole('button', { name: '指法参考' }));
     expect(screen.getByRole('region', { name: '实琴和弦练习' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('单个和弦');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦');
   });
   it('locks one key and its fingerings, reveals progressively, covers every degree and ends the round', async () => {
     const user = userEvent.setup();

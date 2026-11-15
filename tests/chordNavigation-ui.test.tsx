@@ -1,0 +1,161 @@
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import App from '../src/App';
+import { CHORD_NAVIGATION_KEY } from '../src/lib/chordPracticeNavigation';
+import { connectionStorageKey, readConnectionProgress } from '../src/lib/connectionPractice';
+import { GUITAR_PROGRESS_KEY, readGuitarProgress } from '../src/lib/guitarChords';
+import { PROGRESS_KEY } from '../src/lib/progress';
+
+const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+const choose = (name: string, value: string) =>
+  fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
+afterEach(() => vi.useRealTimers());
+
+it('opens recall and reference directly and restores the task when returning to chords', () => {
+  render(<App />);
+  click('和弦');
+  click('看题按弦');
+  expect(screen.getByRole('button', { name: '按好了，核对指法' })).toBeTruthy();
+  expect(screen.queryByRole('group', { name: '实琴练习内容' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '实琴和弦' })).toBeNull();
+  click('指法参考');
+  expect(screen.getByRole('group', { name: '本调七个和弦' })).toBeTruthy();
+  click('音程');
+  click('和弦');
+  expect(screen.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
+});
+
+it('keeps the chosen pair across full progressions, family switches and reloads', () => {
+  const view = render(<App />);
+  click('和弦');
+  click('和弦连接');
+  click('单练 Am → F');
+  expect(screen.getByRole('button', { name: '两和弦专项', pressed: true })).toBeTruthy();
+  expect(screen.getByLabelText('本轮进行').textContent).toBe('Am → F');
+  expect(screen.getByRole('button', { name: 'Am → F', pressed: true })).toBeTruthy();
+  click('回到完整进行');
+  expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G → Am → F');
+  click('两和弦专项');
+  expect(screen.getByLabelText('本轮进行').textContent).toBe('Am → F');
+  click('七和弦');
+  expect(screen.getByLabelText('本轮进行').textContent?.split(' → ')).toHaveLength(2);
+  view.unmount();
+  history.replaceState(null, '', '/');
+  render(<App />);
+  expect(screen.getByRole('button', { name: '两和弦专项', pressed: true })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '七和弦', pressed: true })).toBeTruthy();
+});
+
+it('defaults a standalone pair task from the current progression and updates it with the library', () => {
+  render(<App />);
+  click('和弦');
+  click('两和弦专项');
+  expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G');
+  click(/选择和弦进行/);
+  click('251 收束解决');
+  expect(screen.getByLabelText('本轮进行').textContent).toBe('Dm → G');
+  expect(screen.getByRole('button', { name: 'Dm → G', pressed: true })).toBeTruthy();
+});
+
+it('opens a clicked pair even when browser storage is unavailable', () => {
+  history.replaceState(null, '', '/?practice=chord-connection');
+  render(<App />);
+  const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('unavailable');
+  });
+  try {
+    click('单练 Am → F');
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('Am → F');
+    expect(screen.getByRole('button', { name: '两和弦专项', pressed: true })).toBeTruthy();
+  } finally {
+    spy.mockRestore();
+  }
+});
+
+it('uses the grouped mobile task selector and goes directly to suspended-only tasks', () => {
+  render(<App />);
+  click('和弦');
+  const picker = screen.getByRole('combobox', { name: '当前练习' });
+  expect(
+    within(picker)
+      .getAllByRole('group')
+      .map((group) => group.getAttribute('label')),
+  ).toEqual(['认和弦', '弹和弦', '查指法']);
+  choose('当前练习', 'diatonic');
+  expect(screen.getByRole('table', { name: /C 大调/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '挂留和弦', pressed: true })).toBeTruthy();
+  choose('当前练习', 'resolve');
+  expect(screen.getByRole('table', { name: '整轮挂留安排' })).toBeTruthy();
+  choose('当前练习', 'recall');
+  expect(screen.queryByRole('img')).toBeNull();
+  expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
+});
+
+it('shares changed keys and voicings between reference, recall and connections', () => {
+  render(<App />);
+  click('和弦');
+  click('指法参考');
+  choose('本组调性', 'G');
+  choose('本组使用的按法', '5');
+  click('看题按弦');
+  expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).value).toBe('G');
+  click('和弦连接');
+  expect((screen.getByRole('combobox', { name: '连接调性' }) as HTMLSelectElement).value).toBe('G');
+  choose('连接调性', 'D');
+  fireEvent.click(screen.getByText(/查看本轮指法/, { selector: 'summary' }));
+  choose('D 本轮按法', '5');
+  click('指法参考');
+  expect((screen.getByRole('combobox', { name: '本组调性' }) as HTMLSelectElement).value).toBe('D');
+  expect(readGuitarProgress().overrides.G?.[1]).toBe(5);
+  expect(readGuitarProgress().overrides.D?.[1]).toBe(5);
+  expect(readConnectionProgress('triad').settings.key).toBe('D');
+});
+
+it('stops playback when selecting another task', () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+  history.replaceState(null, '', '/?practice=chord-connection');
+  render(<App />);
+  click('开始节拍');
+  expect(screen.getByRole('button', { name: '停止节拍' })).toBeTruthy();
+  click('看题按弦');
+  act(() => vi.advanceTimersByTime(8000));
+  expect(screen.queryByRole('button', { name: '停止节拍' })).toBeNull();
+  click('和弦连接');
+  expect(screen.getByRole('button', { name: '开始节拍' })).toBeTruthy();
+});
+
+it('keeps suspended recall selected when changing groups after completing a round', () => {
+  history.replaceState(null, '', '/?practice=guitar-sus-chords&task=recall');
+  render(<App />);
+  for (let i = 0; i < 4; i++) {
+    click('弹好了，核对指法');
+    click(i === 3 ? '完成本组' : '下一题');
+  }
+  expect(screen.getByRole('heading', { name: '本组练习完成' })).toBeTruthy();
+  choose('开放指法组', 'A');
+  expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
+  expect(screen.queryByRole('img')).toBeNull();
+  expect(readConnectionProgress('sus').settings.key).toBe('A');
+});
+
+it('honours an explicit old link over the saved task and preserves existing records', () => {
+  const records = { total: 7, correct: 6, time: 12000, history: [], mistakes: [] };
+  const guitar = { key: 'G', attempts: [], overrides: { G: { 1: 5 } } };
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(records));
+  localStorage.setItem(GUITAR_PROGRESS_KEY, JSON.stringify(guitar));
+  localStorage.setItem(
+    CHORD_NAVIGATION_KEY,
+    JSON.stringify({ mode: 'guitar-chords', task: 'recall' }),
+  );
+  localStorage.setItem(
+    connectionStorageKey('triad'),
+    JSON.stringify({ settings: { focus: [6, 4] }, attempts: [] }),
+  );
+  history.replaceState(null, '', '/?practice=chord-connection&task=connection');
+  render(<App />);
+  expect(screen.getByRole('button', { name: '和弦连接', pressed: true })).toBeTruthy();
+  expect(screen.getByLabelText('本轮进行').textContent?.split(' → ')).toHaveLength(4);
+  expect(readGuitarProgress()).toEqual(guitar);
+  expect(JSON.parse(localStorage.getItem(PROGRESS_KEY)!).total).toBe(7);
+});

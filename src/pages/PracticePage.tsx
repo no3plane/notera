@@ -6,6 +6,17 @@ import { PracticeModeToolbar } from '../components/PracticeModeToolbar';
 import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import { GuitarSusPractice } from '../components/GuitarSusPractice';
 import { ChordConnectionPractice } from '../components/ChordConnectionPractice';
+import { ChordTaskNavigation } from '../components/ChordTaskNavigation';
+import {
+  CHORD_NAVIGATION_KEY,
+  CHORD_TASK_GROUPS,
+  defaultChordTask,
+  modeForChordTask,
+  readChordTask,
+  readLastChordPractice,
+} from '../lib/chordPracticeNavigation';
+import type { ChordTask } from '../lib/chordPracticeNavigation';
+import type { ConnectionLink } from '../lib/connectionPractice';
 import { DiatonicSusOverview } from '../components/DiatonicSusOverview';
 import {
   chordFamilyForMode,
@@ -20,8 +31,6 @@ import {
   modesForTopic,
   TOPICS,
   CONNECTION_MODES,
-  CHORD_MODES,
-  GUITAR_CHORD_MODES,
 } from '../lib/exercises';
 import type { Mode } from '../lib/exercises';
 import { kindStats } from '../lib/practice';
@@ -54,26 +63,37 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const interactive = guitar || connection;
   const family = chordFamilyForMode(mode);
   const [preferredFamily, setPreferredFamily] = useState(() => family ?? readChordFamily());
+  const [chordTask, setChordTask] = useState(() => readChordTask(mode));
+  const [pairFocus, setPairFocus] = useState<ConnectionLink | null>(null);
   const [overview, setOverview] = useState(true);
   const topic = TOPICS.find((t) => modesForTopic(t, family ?? 'triad').includes(mode))!;
   const topicModes = modesForTopic(topic, family ?? 'triad');
   const forward = isForwardChordMode(mode);
   const diatonic = mode === DIATONIC_SUS_MODE;
   const showOverview = diatonic && overview;
-  function changeMode(value: Mode) {
+  function changeMode(value: Mode, task = defaultChordTask(value)) {
+    setPairFocus(null);
+    setChordTask(task);
     setOverview(value === DIATONIC_SUS_MODE);
     start('basic', value);
+  }
+  function changeTask(task: ChordTask, focus: ConnectionLink | null = null) {
+    changeMode(modeForChordTask(task, family ?? preferredFamily), task);
+    setPairFocus(focus);
   }
   function changeFamily(value: PracticeChordFamily) {
     if (value === family) return;
     setPreferredFamily(value);
     saveChordFamily(value);
-    if (guitar) changeMode(GUITAR_CHORD_MODES[value]);
-    else if (connection) changeMode(CONNECTION_MODES[value]);
-    else {
-      const index = CHORD_MODES[family!].findIndex((kind) => kind === mode);
-      changeMode(CHORD_MODES[value][index] ?? CHORD_MODES[value][0]);
-    }
+    const task =
+      chordTask === 'connection' && value === 'sus'
+        ? 'resolve'
+        : chordTask === 'resolve' && value !== 'sus'
+          ? 'connection'
+          : chordTask === 'diatonic' && value !== 'sus'
+            ? 'tones'
+            : chordTask;
+    changeMode(modeForChordTask(task, value), task);
   }
   const familySwitch = family && (
     <div className="segmented chord-family" role="group" aria-label="和弦类型">
@@ -84,11 +104,26 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           aria-pressed={family === value}
           onClick={() => changeFamily(value)}
         >
-          {connection && value === 'sus' ? '挂留与解决' : CHORD_FAMILY_LABELS[value]}
+          {CHORD_FAMILY_LABELS[value]}
         </button>
       ))}
     </div>
   );
+  useEffect(() => {
+    if (family) {
+      setPreferredFamily(family);
+      saveChordFamily(family);
+      try {
+        localStorage.setItem(CHORD_NAVIGATION_KEY, JSON.stringify({ mode, task: chordTask }));
+      } catch {
+        /* Keep task navigation usable without storage. */
+      }
+    }
+    const url = new URL(location.href);
+    if (family) url.searchParams.set('task', chordTask);
+    else url.searchParams.delete('task');
+    history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [mode, family, chordTask]);
   const board = useRef<HTMLElement>(null);
   const mistakeCount =
     (mode === 'interval' ? progress.mistakes.length : 0) +
@@ -169,7 +204,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     <>
       <div className="practice-heading">
         <h1>{topic.label}</h1>
-        <p>{connection ? '选一个进行，直接开始。' : '选你今天想练的，每项都可以独立开始。'}</p>
+        <p>
+          {family
+            ? '认和弦、练按弦、换和弦，选一项直接开始。'
+            : '选你今天想练的，每项都可以独立开始。'}
+        </p>
       </div>
       <div className="topic-tabs" role="group" aria-label="练习专题">
         {TOPICS.map((t) => (
@@ -178,290 +217,341 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
             className={topic === t ? 'active' : ''}
             aria-pressed={topic === t}
             onClick={() => {
-              if (topic !== t) changeMode(modesForTopic(t, preferredFamily)[0]);
+              if (topic !== t) {
+                const saved = 'chordModes' in t ? readLastChordPractice() : undefined;
+                changeMode(saved?.mode ?? modesForTopic(t, preferredFamily)[0], saved?.task);
+              }
             }}
           >
             {t.label}
           </button>
         ))}
       </div>
-      {mode !== 'fretboard' && !connection && (
-        <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
-          <div className="practice-mode-groups">
-            {familySwitch}
-            <div
-              className={topicModes.length > 1 ? 'segmented' : 'single-mode'}
-              role="group"
-              aria-label="练习题型"
-            >
-              {topicModes.length === 1 ? (
-                <span>{MODE_LABELS[mode]}</span>
-              ) : (
-                topicModes.map((value) => (
-                  <button
-                    key={value}
-                    className={mode === value ? 'active' : ''}
-                    aria-pressed={mode === value}
-                    onClick={() => {
-                      if (mode !== value) changeMode(value);
-                    }}
-                  >
-                    {MODE_LABELS[value]}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        </PracticeModeToolbar>
-      )}
-      {connection ? (
-        <ChordConnectionPractice key={family} family={family!} familySwitch={familySwitch} />
-      ) : guitar ? (
-        family === 'sus' ? (
-          <GuitarSusPractice />
-        ) : (
-          <GuitarChordPractice
-            key={family}
-            family={family}
-            onConnect={() => changeMode(CONNECTION_MODES[family!])}
-          />
-        )
-      ) : mode === 'fretboard' ? (
-        <FretboardPractice controller={controller} />
-      ) : showOverview ? (
-        <DiatonicSusOverview
-          onStart={() => {
-            start('basic');
-            setOverview(false);
-          }}
-        />
-      ) : (
-        <div className={`practice-layout${family ? ' chord-theory' : ''}`}>
-          <section ref={board} className="practice-board" aria-label={`${MODE_LABELS[mode]}练习`}>
-            <div className="practice-bar">
-              <span>
-                {empty ? '易错复习' : done ? '本轮练习已完成' : `第 ${s.index + 1} / ${goal} 题`}
-              </span>
-              <select
-                id="level"
-                aria-label="练习难度"
-                value={state.level}
-                onChange={(e) => start(e.target.value as Level)}
-              >
-                <option value="basic">
-                  {hasDifficulty ? '自然音 · 基础' : `常规练习 · ${diatonic ? 7 : 10} 题`}
-                </option>
-                {hasDifficulty && <option value="mixed">升降音 · 进阶</option>}
-                <option value="review">易错复习 · {mistakeCount} 题</option>
-              </select>
-            </div>
-            <div className="progress-line">
-              <i
-                style={{ width: `${goal ? ((s.index + Number(s.revealed)) / goal) * 100 : 0}%` }}
-              />
-            </div>
-            {showNotation && (
-              <>
-                <div className="notation-toolbar">
-                  <span>题目显示</span>
-                  <div className="segmented" role="group" aria-label="题目显示形式">
-                    {NOTE_FORMATS.map((f) => (
-                      <button
-                        key={f.value}
-                        className={format === f.value ? 'active' : ''}
-                        aria-pressed={format === f.value}
-                        onClick={() => onFormat(f.value)}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <p className="notation-guide">
-                  1=C · 固定 Do · C4 为中音，点在下方低八度，点在上方高八度。
-                </p>
-              </>
-            )}
-            {empty ? (
-              <div className="session-end">
-                <h2>还没有易错题</h2>
-                <p>当前题型没有待巩固题。答错的题会自动保存在这里。</p>
-                <button className="primary" onClick={() => start('basic')}>
-                  开始基础练习
-                </button>
-              </div>
-            ) : done ? (
-              <div className="session-end">
-                <p className="eyebrow" style={{ justifyContent: 'center' }}>
-                  ONE STEP CLOSER
-                </p>
-                <h2>这一轮，完成了。</h2>
-                <div className="score-big">
-                  {correct}
-                  <span> / {s.results.length}</span>
-                </div>
-                <p>
-                  平均每题 {average.toFixed(1)} 秒 · {s.results.filter((r) => r.hint).length}{' '}
-                  题使用提示
-                  <br />
-                  {correct === s.results.length
-                    ? '全部回答正确！可以再练一轮，或切换题型继续巩固。'
-                    : '答错的题已进入易错复习，再看一次推理就会更清楚。'}
-                </p>
-                <button className="primary" onClick={() => start()}>
-                  再练一轮 →
-                </button>
-                {diatonic && (
-                  <button className="plain-button" onClick={() => setOverview(true)}>
-                    查看总览
-                  </button>
-                )}
-              </div>
-            ) : current.exercise ? (
-              <ExerciseQuestion session={s} dispatch={dispatch} play={play} format={format} />
-            ) : (
-              <PracticeQuestion session={s} dispatch={dispatch} play={play} format={format} />
-            )}
-          </section>
-          <aside className="practice-side">
-            {family === 'sus' && !diatonic && (
-              <details className="practice-tip">
-                <summary>查看挂留和弦示例</summary>
-                <p>C–E–G 里的 E 换成 D 就是 Csus2（1–2–5），换成 F 就是 Csus4（1–4–5）。</p>
-                <p>C、D、G 以 C 为根音时是 Csus2，以 G 为根音时是 Gsus4。</p>
-              </details>
-            )}
-            <h2>
-              {MODE_LABELS[mode]} <small className="practice-local-label">· 本机记录</small>
+      <div className={family ? 'chord-practice-shell' : undefined}>
+        {family && <ChordTaskNavigation task={chordTask} onChange={changeTask} />}
+        <div className={family ? 'chord-workspace' : undefined}>
+          {family && (
+            <h2 className="chord-workspace-heading">
+              {
+                CHORD_TASK_GROUPS.flatMap((group) => [...group.tasks]).find(
+                  (task) => task.id === chordTask,
+                )?.label
+              }
             </h2>
-            <div className="stats">
-              <div className="stat">
-                <b>
-                  {stats.total ? Math.round((stats.correct / stats.total) * 100) : 0}
-                  <small style={{ fontSize: 12 }}>%</small>
-                </b>
-                <span>累计正确率</span>
-              </div>
-              <div className="stat">
-                <b>
-                  {stats.total ? (stats.time / stats.total / 1000).toFixed(1) : '—'}
-                  <small style={{ fontSize: 12 }}> s</small>
-                </b>
-                <span>平均作答时间</span>
-              </div>
-              <div className="stat">
-                <b>{stats.total}</b>
-                <span>已完成题目</span>
-              </div>
-              <div className="stat">
-                <b>{mistakeCount}</b>
-                <span>待巩固易错题</span>
-              </div>
-            </div>
-            <div className="kind-progress">
-              <h3>分项进度{family ? ` · ${CHORD_FAMILY_LABELS[family]}` : ''}</h3>
-              {KINDS.filter((kind) => {
-                const kindFamily = chordFamilyForMode(kind);
-                return !kindFamily || kindFamily === (family ?? 'triad');
-              }).map((kind) => {
-                const part = kindStats(progress, kind);
-                const recalls =
-                  kind === 'fretboard'
-                    ? Object.values(progress.fretboard ?? {}).flat().length +
-                      Object.values(progress.sameNote ?? {}).flat().length +
-                      (progress.stringIntervals?.length ?? 0)
-                    : 0;
-                return (
-                  <div key={kind} className={kind === mode ? 'current' : ''}>
-                    <span>{KIND_LABELS[kind]}</span>
-                    <span>
-                      {kind === 'fretboard'
-                        ? recalls
-                          ? `已练 ${recalls} 题`
-                          : '尚未练习'
-                        : part.total
-                          ? `${Math.round((part.correct / part.total) * 100)}% · ${part.total} 题`
-                          : '尚未练习'}
-                    </span>
+          )}
+          {mode !== 'fretboard' && !interactive && (
+            <PracticeModeToolbar description={MODE_DESCRIPTIONS[mode]}>
+              <div className="practice-mode-groups">
+                {familySwitch}
+                {!family && (
+                  <div
+                    className={topicModes.length > 1 ? 'segmented' : 'single-mode'}
+                    role="group"
+                    aria-label="练习题型"
+                  >
+                    {topicModes.length === 1 ? (
+                      <span>{MODE_LABELS[mode]}</span>
+                    ) : (
+                      topicModes.map((value) => (
+                        <button
+                          key={value}
+                          className={mode === value ? 'active' : ''}
+                          aria-pressed={mode === value}
+                          onClick={() => {
+                            if (mode !== value) changeMode(value);
+                          }}
+                        >
+                          {MODE_LABELS[value]}
+                        </button>
+                      ))
+                    )}
                   </div>
-                );
-              })}
-            </div>
-            {mode === 'interval' && (
-              <div className="practice-tip">
-                <p className="eyebrow">A LITTLE REMINDER</p>
-                <h3>不要跳过“数音名”这一步。</h3>
-                <p>C 到 F♯ 和 C 到 G♭ 都相距 6 个半音，但前者是四度，后者是五度。拼写决定度数。</p>
-              </div>
-            )}
-            <div className="practice-tip">
-              <h3>最近的练习</h3>
-              {(progress.exerciseHistory ?? [])
-                .filter((h) => {
-                  const exercise = findExercise(h.id);
-                  return exercise && exercise.kind === mode;
-                })
-                .slice(0, 5)
-                .map((h, i) => (
-                  <div key={`exercise-${i}`} className="history-row exercise-history">
-                    <span>{findExercise(h.id)?.title}</span>
-                    <span className={h.correct ? '' : 'wrong-text'}>
-                      {h.correct ? '✓' : '待巩固'}
-                    </span>
-                  </div>
-                ))}
-              {mode === 'interval' && progress.history.length ? (
-                progress.history.slice(0, 5).map((h, i) => (
-                  <div key={i} className="history-row">
-                    <span>
-                      {name(h.a, false)} → {name(h.b, false)}
-                    </span>
-                    <span>{interval(h.a, h.b).title}</span>
-                    <span className={h.correct ? '' : 'wrong-text'}>
-                      {h.correct ? '✓' : '待巩固'}
-                    </span>
-                  </div>
-                ))
-              ) : !stats.total ? (
-                <p className="empty-history">做完第一题，你的进步就从这里开始。</p>
-              ) : null}
-            </div>
-            <div className="record-actions">
-              <button className="plain-button" onClick={reset}>
-                重置全部记录
-              </button>
-              {state.backup &&
-                (state.backup.total > 0 ||
-                  state.backup.stringIntervals?.length ||
-                  state.backup.fretboardMemory ||
-                  state.backup.fretboard) && (
-                  <button className="plain-button" onClick={restore}>
-                    恢复上次记录
-                  </button>
                 )}
+              </div>
+            </PracticeModeToolbar>
+          )}
+          {connection ? (
+            <ChordConnectionPractice
+              key={`${family}:${chordTask}`}
+              family={family!}
+              familySwitch={familySwitch}
+              task={chordTask === 'pairs' ? 'pairs' : 'connection'}
+              initialFocus={pairFocus}
+              onTaskChange={(task, focus) =>
+                changeTask(
+                  task === 'pairs' ? task : family === 'sus' ? 'resolve' : 'connection',
+                  focus,
+                )
+              }
+            />
+          ) : guitar ? (
+            family === 'sus' ? (
+              <GuitarSusPractice
+                key={chordTask}
+                familySwitch={familySwitch}
+                initialTask={chordTask === 'recall' ? 'recall' : 'reference'}
+                onTaskChange={changeTask}
+              />
+            ) : (
+              <GuitarChordPractice
+                key={`${family}:${chordTask}`}
+                family={family}
+                familySwitch={familySwitch}
+                initialTask={chordTask === 'recall' ? 'recall' : 'reference'}
+                onTaskChange={changeTask}
+                onConnect={() => changeMode(CONNECTION_MODES[family!], 'connection')}
+              />
+            )
+          ) : mode === 'fretboard' ? (
+            <FretboardPractice controller={controller} />
+          ) : showOverview ? (
+            <DiatonicSusOverview
+              onStart={() => {
+                start('basic');
+                setOverview(false);
+              }}
+            />
+          ) : (
+            <div className={`practice-layout${family ? ' chord-theory' : ''}`}>
+              <section
+                ref={board}
+                className="practice-board"
+                aria-label={`${MODE_LABELS[mode]}练习`}
+              >
+                <div className="practice-bar">
+                  <span>
+                    {empty
+                      ? '易错复习'
+                      : done
+                        ? '本轮练习已完成'
+                        : `第 ${s.index + 1} / ${goal} 题`}
+                  </span>
+                  <select
+                    id="level"
+                    aria-label="练习难度"
+                    value={state.level}
+                    onChange={(e) => start(e.target.value as Level)}
+                  >
+                    <option value="basic">
+                      {hasDifficulty ? '自然音 · 基础' : `常规练习 · ${diatonic ? 7 : 10} 题`}
+                    </option>
+                    {hasDifficulty && <option value="mixed">升降音 · 进阶</option>}
+                    <option value="review">易错复习 · {mistakeCount} 题</option>
+                  </select>
+                </div>
+                <div className="progress-line">
+                  <i
+                    style={{
+                      width: `${goal ? ((s.index + Number(s.revealed)) / goal) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                {showNotation && (
+                  <>
+                    <div className="notation-toolbar">
+                      <span>题目显示</span>
+                      <div className="segmented" role="group" aria-label="题目显示形式">
+                        {NOTE_FORMATS.map((f) => (
+                          <button
+                            key={f.value}
+                            className={format === f.value ? 'active' : ''}
+                            aria-pressed={format === f.value}
+                            onClick={() => onFormat(f.value)}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="notation-guide">
+                      1=C · 固定 Do · C4 为中音，点在下方低八度，点在上方高八度。
+                    </p>
+                  </>
+                )}
+                {empty ? (
+                  <div className="session-end">
+                    <h2>还没有易错题</h2>
+                    <p>当前题型没有待巩固题。答错的题会自动保存在这里。</p>
+                    <button className="primary" onClick={() => start('basic')}>
+                      开始基础练习
+                    </button>
+                  </div>
+                ) : done ? (
+                  <div className="session-end">
+                    <p className="eyebrow" style={{ justifyContent: 'center' }}>
+                      ONE STEP CLOSER
+                    </p>
+                    <h2>这一轮，完成了。</h2>
+                    <div className="score-big">
+                      {correct}
+                      <span> / {s.results.length}</span>
+                    </div>
+                    <p>
+                      平均每题 {average.toFixed(1)} 秒 · {s.results.filter((r) => r.hint).length}{' '}
+                      题使用提示
+                      <br />
+                      {correct === s.results.length
+                        ? '全部回答正确！可以再练一轮，或切换题型继续巩固。'
+                        : '答错的题已进入易错复习，再看一次推理就会更清楚。'}
+                    </p>
+                    <button className="primary" onClick={() => start()}>
+                      再练一轮 →
+                    </button>
+                    {diatonic && (
+                      <button className="plain-button" onClick={() => setOverview(true)}>
+                        查看总览
+                      </button>
+                    )}
+                  </div>
+                ) : current.exercise ? (
+                  <ExerciseQuestion session={s} dispatch={dispatch} play={play} format={format} />
+                ) : (
+                  <PracticeQuestion session={s} dispatch={dispatch} play={play} format={format} />
+                )}
+              </section>
+              <aside className="practice-side">
+                {family === 'sus' && !diatonic && (
+                  <details className="practice-tip">
+                    <summary>查看挂留和弦示例</summary>
+                    <p>C–E–G 里的 E 换成 D 就是 Csus2（1–2–5），换成 F 就是 Csus4（1–4–5）。</p>
+                    <p>C、D、G 以 C 为根音时是 Csus2，以 G 为根音时是 Gsus4。</p>
+                  </details>
+                )}
+                <h2>
+                  {MODE_LABELS[mode]} <small className="practice-local-label">· 本机记录</small>
+                </h2>
+                <div className="stats">
+                  <div className="stat">
+                    <b>
+                      {stats.total ? Math.round((stats.correct / stats.total) * 100) : 0}
+                      <small style={{ fontSize: 12 }}>%</small>
+                    </b>
+                    <span>累计正确率</span>
+                  </div>
+                  <div className="stat">
+                    <b>
+                      {stats.total ? (stats.time / stats.total / 1000).toFixed(1) : '—'}
+                      <small style={{ fontSize: 12 }}> s</small>
+                    </b>
+                    <span>平均作答时间</span>
+                  </div>
+                  <div className="stat">
+                    <b>{stats.total}</b>
+                    <span>已完成题目</span>
+                  </div>
+                  <div className="stat">
+                    <b>{mistakeCount}</b>
+                    <span>待巩固易错题</span>
+                  </div>
+                </div>
+                <div className="kind-progress">
+                  <h3>分项进度{family ? ` · ${CHORD_FAMILY_LABELS[family]}` : ''}</h3>
+                  {KINDS.filter((kind) => {
+                    const kindFamily = chordFamilyForMode(kind);
+                    return !kindFamily || kindFamily === (family ?? 'triad');
+                  }).map((kind) => {
+                    const part = kindStats(progress, kind);
+                    const recalls =
+                      kind === 'fretboard'
+                        ? Object.values(progress.fretboard ?? {}).flat().length +
+                          Object.values(progress.sameNote ?? {}).flat().length +
+                          (progress.stringIntervals?.length ?? 0)
+                        : 0;
+                    return (
+                      <div key={kind} className={kind === mode ? 'current' : ''}>
+                        <span>{KIND_LABELS[kind]}</span>
+                        <span>
+                          {kind === 'fretboard'
+                            ? recalls
+                              ? `已练 ${recalls} 题`
+                              : '尚未练习'
+                            : part.total
+                              ? `${Math.round((part.correct / part.total) * 100)}% · ${part.total} 题`
+                              : '尚未练习'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {mode === 'interval' && (
+                  <div className="practice-tip">
+                    <p className="eyebrow">A LITTLE REMINDER</p>
+                    <h3>不要跳过“数音名”这一步。</h3>
+                    <p>
+                      C 到 F♯ 和 C 到 G♭ 都相距 6 个半音，但前者是四度，后者是五度。拼写决定度数。
+                    </p>
+                  </div>
+                )}
+                <div className="practice-tip">
+                  <h3>最近的练习</h3>
+                  {(progress.exerciseHistory ?? [])
+                    .filter((h) => {
+                      const exercise = findExercise(h.id);
+                      return exercise && exercise.kind === mode;
+                    })
+                    .slice(0, 5)
+                    .map((h, i) => (
+                      <div key={`exercise-${i}`} className="history-row exercise-history">
+                        <span>{findExercise(h.id)?.title}</span>
+                        <span className={h.correct ? '' : 'wrong-text'}>
+                          {h.correct ? '✓' : '待巩固'}
+                        </span>
+                      </div>
+                    ))}
+                  {mode === 'interval' && progress.history.length ? (
+                    progress.history.slice(0, 5).map((h, i) => (
+                      <div key={i} className="history-row">
+                        <span>
+                          {name(h.a, false)} → {name(h.b, false)}
+                        </span>
+                        <span>{interval(h.a, h.b).title}</span>
+                        <span className={h.correct ? '' : 'wrong-text'}>
+                          {h.correct ? '✓' : '待巩固'}
+                        </span>
+                      </div>
+                    ))
+                  ) : !stats.total ? (
+                    <p className="empty-history">做完第一题，你的进步就从这里开始。</p>
+                  ) : null}
+                </div>
+                <div className="record-actions">
+                  <button className="plain-button" onClick={reset}>
+                    重置全部记录
+                  </button>
+                  {state.backup &&
+                    (state.backup.total > 0 ||
+                      state.backup.stringIntervals?.length ||
+                      state.backup.fretboardMemory ||
+                      state.backup.fretboard) && (
+                      <button className="plain-button" onClick={restore}>
+                        恢复上次记录
+                      </button>
+                    )}
+                </div>
+                <div className="shortcut">
+                  {forward ? (
+                    <>
+                      <kbd>1</kbd> — <kbd>7</kbd> 选择构成音，再按取消
+                      <br />
+                    </>
+                  ) : mode === 'interval' ? (
+                    <>
+                      <kbd>1</kbd> — <kbd>8</kbd> 音程题选度数
+                      <br />
+                    </>
+                  ) : null}
+                  {!diatonic && (
+                    <>
+                      <kbd>Space</kbd> 聆听 ·{' '}
+                    </>
+                  )}
+                  <kbd>Enter</kbd> 提交 / 下一题
+                </div>
+              </aside>
             </div>
-            <div className="shortcut">
-              {forward ? (
-                <>
-                  <kbd>1</kbd> — <kbd>7</kbd> 选择构成音，再按取消
-                  <br />
-                </>
-              ) : mode === 'interval' ? (
-                <>
-                  <kbd>1</kbd> — <kbd>8</kbd> 音程题选度数
-                  <br />
-                </>
-              ) : null}
-              {!diatonic && (
-                <>
-                  <kbd>Space</kbd> 聆听 ·{' '}
-                </>
-              )}
-              <kbd>Enter</kbd> 提交 / 下一题
-            </div>
-          </aside>
+          )}
         </div>
-      )}
+      </div>
     </>
   );
 }

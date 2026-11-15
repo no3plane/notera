@@ -45,10 +45,16 @@ export function ChordConnectionPractice({
   family = 'triad',
   familySwitch,
   fixedRoot,
+  task,
+  onTaskChange,
+  initialFocus,
 }: {
   family?: PracticeChordFamily;
   familySwitch?: ReactNode;
   fixedRoot?: SusGuitarRoot;
+  task?: 'connection' | 'pairs';
+  onTaskChange?: (task: 'connection' | 'pairs', focus?: ConnectionLink) => void;
+  initialFocus?: ConnectionLink | null;
 }) {
   const sus = family === 'sus';
   const [progress, setProgress] = useState(() => {
@@ -57,10 +63,17 @@ export function ChordConnectionPractice({
       sus ? readSusGuitarProgress().root : readGuitarProgress(family).key,
     );
     if (fixedRoot) saved.settings.key = fixedRoot;
+    if (task === 'pairs') {
+      if (initialFocus) saved.settings.focus = initialFocus;
+      const links = progressionLinks(PROGRESSIONS[sus ? 0 : saved.settings.progression]);
+      if (!links.some((link) => link.join(':') === saved.settings.focus?.join(':')))
+        saved.settings.focus = links[0];
+    }
     return saved;
   });
   const { settings } = progress;
-  const { key, progression, tempo, loops, display, focus } = settings;
+  const { key, progression, tempo, loops, display } = settings;
+  const focus = task === 'connection' ? null : settings.focus;
   const pattern = CHORD_PROGRESSIONS[sus ? 0 : progression];
   const minor = Boolean(pattern.minor);
   const root = (key === 'A' ? 'A' : 'E') as SusGuitarRoot;
@@ -132,6 +145,12 @@ export function ChordConnectionPractice({
   }
   function configure(patch: Partial<ConnectionSettings>) {
     resetRound();
+    if (task === 'pairs' && patch.focus === null) {
+      patch = {
+        ...patch,
+        focus: progressionLinks(PROGRESSIONS[sus ? 0 : (patch.progression ?? progression)])[0],
+      };
+    }
     setProgress((current) => ({ ...current, settings: { ...current.settings, ...patch } }));
   }
   function start() {
@@ -141,6 +160,20 @@ export function ChordConnectionPractice({
   }
   function practiceLink(link: ConnectionLink) {
     configure({ focus: link });
+    if (onTaskChange && task !== 'pairs') {
+      try {
+        localStorage.setItem(
+          connectionStorageKey(family),
+          JSON.stringify({
+            ...progress,
+            settings: { ...settings, focus: link },
+          }),
+        );
+      } catch {
+        setStorageError(true);
+      }
+      onTaskChange('pairs', link);
+    }
   }
   function changeKey(value: GuitarKey) {
     configure({ key: value, focus: null });
@@ -153,11 +186,21 @@ export function ChordConnectionPractice({
       } catch {
         setStorageError(true);
       }
+    } else {
+      try {
+        localStorage.setItem(
+          guitarProgressKey(family),
+          JSON.stringify({ ...readGuitarProgress(family), key: value }),
+        );
+      } catch {
+        setStorageError(true);
+      }
     }
   }
   function changeVoicing(degree: number, rootString: RootString) {
     const next = {
       ...fingerings,
+      key: sus ? fingerings.key : key,
       overrides: {
         ...fingerings.overrides,
         [harmonyKey]: { ...fingerings.overrides[harmonyKey], [degree]: rootString },
@@ -214,7 +257,7 @@ export function ChordConnectionPractice({
             <span>4/4 拍 · 每个和弦一小节</span>
           </div>
           <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
-            {sus ? '挂留与解决' : focus ? '把这一对换顺' : '常见进行连接'}
+            {focus ? '把这一对换顺' : sus ? '挂留与解决' : '常见进行连接'}
           </h2>
           {!sus && (
             <div className="connection-setup">
@@ -226,6 +269,24 @@ export function ChordConnectionPractice({
                 family={family}
                 showNames={display === 'names'}
               />
+            </div>
+          )}
+          {task === 'pairs' && (
+            <div className="connection-pair-picker" role="group" aria-label="选择两个和弦">
+              <p>从当前进行中选一对，循环练习往返换指。</p>
+              <div className="connection-link-list">
+                {progressionLinks(fullSequence).map((link) => (
+                  <button
+                    key={link.join(':')}
+                    className="guitar-secondary"
+                    disabled={active}
+                    aria-pressed={focus?.join(':') === link.join(':')}
+                    onClick={() => practiceLink(link)}
+                  >
+                    {linkName(link)}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <p className="connection-sequence" aria-label="本轮进行">
@@ -401,7 +462,9 @@ export function ChordConnectionPractice({
             <button
               className="guitar-text-button"
               disabled={active}
-              onClick={() => configure({ focus: null })}
+              onClick={() =>
+                onTaskChange ? onTaskChange('connection') : configure({ focus: null })
+              }
             >
               回到完整进行
             </button>
@@ -492,22 +555,24 @@ export function ChordConnectionPractice({
                 ))}
             {audioError && <p role="status">{audioError}</p>}
           </details>
-          <div className="connection-pair-practice">
-            <h3>拆开练一对</h3>
-            <p>换不过去时，先单练这一步。</p>
-            <div className="connection-link-list">
-              {progressionLinks(fullSequence).map((link) => (
-                <button
-                  className="guitar-text-button"
-                  disabled={active}
-                  key={link.join(':')}
-                  onClick={() => practiceLink(link)}
-                >
-                  单练 {linkName(link)}
-                </button>
-              ))}
+          {task !== 'pairs' && (
+            <div className="connection-pair-practice">
+              <h3>拆开练一对</h3>
+              <p>换不过去时，先单练这一步。</p>
+              <div className="connection-link-list">
+                {progressionLinks(fullSequence).map((link) => (
+                  <button
+                    className="guitar-text-button"
+                    disabled={active}
+                    key={link.join(':')}
+                    onClick={() => practiceLink(link)}
+                  >
+                    单练 {linkName(link)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           {storageError && <p role="status">浏览器暂时无法保存设置，当前仍可继续练习。</p>}
         </aside>
       </div>

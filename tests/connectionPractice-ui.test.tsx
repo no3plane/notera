@@ -18,7 +18,7 @@ describe('independent connection practice', () => {
     (mode) => {
       history.replaceState(null, '', `/?practice=${mode}`);
       render(<App />);
-      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦连接');
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦');
       expect(screen.getByRole('table', { name: '四小节节拍谱' })).toBeTruthy();
       expect(screen.queryByText(/开始看题按弦|熟悉这一调/)).toBeNull();
       click('开始节拍');
@@ -32,7 +32,8 @@ describe('independent connection practice', () => {
       within(screen.getByRole('group', { name: '练习专题' }))
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['音程', '指板', '单个和弦', '和弦连接']);
+    ).toEqual(['音程', '指板', '和弦']);
+    click('和弦');
     click('和弦连接');
     expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G → Am → F');
     click('开始节拍');
@@ -70,6 +71,7 @@ describe('independent connection practice', () => {
   });
   it('remembers the last exercise, key, progression, tempo, loop count and display after reopening', () => {
     const view = render(<App />);
+    click('和弦');
     click('和弦连接');
     fireEvent.change(screen.getByRole('combobox', { name: '连接调性' }), {
       target: { value: 'G' },
@@ -87,7 +89,7 @@ describe('independent connection practice', () => {
     view.unmount();
     history.replaceState(null, '', '/');
     render(<App />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦连接');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('和弦');
     expect((screen.getByRole('combobox', { name: '连接调性' }) as HTMLSelectElement).value).toBe(
       'G',
     );
@@ -96,7 +98,8 @@ describe('independent connection practice', () => {
       '2',
     );
     expect(screen.getByLabelText('本轮进行').textContent).toBe('2 → 5 → 1');
-    expect(location.search).toBe('?practice=chord-connection');
+    expect(new URLSearchParams(location.search).get('practice')).toBe('chord-connection');
+    expect(new URLSearchParams(location.search).get('task')).toBe('connection');
   });
   it('counts in, advances on beats, ends without evaluation and stops in the background', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });

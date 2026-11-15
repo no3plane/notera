@@ -88,19 +88,11 @@ export const TOPICS: Topic[] = [
   { label: '音程', modes: ['interval', 'build-note'] },
   { label: '指板', modes: ['fretboard'] },
   {
-    label: '单个和弦',
+    label: '和弦',
     chordModes: {
-      triad: [...CHORD_MODES.triad, GUITAR_CHORD_MODES.triad],
-      seventh: [...CHORD_MODES.seventh, GUITAR_CHORD_MODES.seventh],
-      sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus],
-    },
-  },
-  {
-    label: '和弦连接',
-    chordModes: {
-      triad: [CONNECTION_MODES.triad],
-      seventh: [CONNECTION_MODES.seventh],
-      sus: [CONNECTION_MODES.sus],
+      triad: [...CHORD_MODES.triad, GUITAR_CHORD_MODES.triad, CONNECTION_MODES.triad],
+      seventh: [...CHORD_MODES.seventh, GUITAR_CHORD_MODES.seventh, CONNECTION_MODES.seventh],
+      sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus, CONNECTION_MODES.sus],
     },
   },
 ];
