@@ -413,19 +413,6 @@
   min-height: 44px;
   font-size: 13px;
 }
-.connection-pair-practice {
-  padding: 20px 0;
-  border-bottom: 1px solid var(--line);
-}
-.connection-link-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-.connection-link-list .guitar-text-button {
-  padding: 0;
-  text-decoration-color: var(--practice-control);
-}
 footer {
   font-size: 11px;
   letter-spacing: normal;
@@ -684,20 +671,6 @@ footer {
   flex: 1 1 160px;
   max-width: 220px;
 }
-.connection-pair-picker {
-  margin-top: 20px;
-}
-.connection-pair-picker p {
-  color: var(--practice-subtle);
-  font-size: 13px;
-}
-.connection-pair-picker .guitar-secondary {
-  padding: 8px 14px;
-}
-.connection-pair-picker [aria-pressed='true'] {
-  background: var(--practice-active);
-  border-color: var(--ink);
-}
 @media (max-width: 1200px) {
   .chord-workspace .chord-theory {
     grid-template-columns: minmax(0, 1fr);
@@ -742,8 +715,7 @@ footer {
   .chord-workspace .connection-shape {
     flex-basis: calc(50% - 20px);
   }
-  .chord-practice-shell:has(.guitar-connection[data-playing]) .chord-task-navigation,
-  .guitar-connection[data-playing] .connection-pair-picker {
+  .chord-practice-shell:has(.guitar-connection[data-playing]) .chord-task-navigation {
     display: none;
   }
 }

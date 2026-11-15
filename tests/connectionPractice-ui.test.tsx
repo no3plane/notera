@@ -62,8 +62,8 @@ describe('independent connection practice', () => {
     expect(readConnectionProgress('triad').attempts).toHaveLength(0);
     expect(readGuitarProgress()).toEqual(legacy);
     expect(readProgress()?.total).toBe(7);
-    click('单练 Am → F');
-    expect(screen.getByLabelText('本轮进行').textContent).toBe('Am → F');
+    expect(screen.queryByRole('button', { name: /^单练 / })).toBeNull();
+    expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G → Am → F');
     click('开始节拍');
     click('停止节拍');
     expect(readConnectionProgress('triad').attempts).toHaveLength(0);
@@ -158,9 +158,6 @@ describe('independent connection practice', () => {
     const expected = 'G → D → Em → Bm → C → G → C → D';
     expect(screen.getByLabelText('本轮进行').textContent).toBe(expected);
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(9);
-    click('单练 D → G');
-    expect(screen.getByLabelText('本轮进行').textContent).toBe('D → G');
-    click('回到完整进行');
     view.unmount();
     render(<ChordConnectionPractice />);
     expect(screen.getByLabelText('本轮进行').textContent).toBe(expected);
@@ -176,8 +173,6 @@ describe('independent connection practice', () => {
     });
     expect(screen.getByLabelText('本轮进行').textContent).toBe('2 → 5 → 1');
     expect(screen.getByRole('rowheader', { name: '第 1 小节 2' }).textContent).toBe('2');
-    click('单练 5 → 1');
-    expect(screen.getByLabelText('本轮进行').textContent).toBe('5 → 1');
     click(/选择和弦进行/);
     expect(screen.queryByText('Bm7♭5 → E7 → Am')).toBeNull();
     click('小调 1451 小调回归');

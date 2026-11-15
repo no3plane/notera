@@ -77,7 +77,6 @@ describe('connection records', () => {
           progression: 2,
           tempo: -4,
           loops: 5,
-          focus: [1, 8],
           style: 'invalid',
         },
         attempts: [
@@ -89,7 +88,7 @@ describe('connection records', () => {
       }),
     );
     expect(readConnectionProgress('triad')).toMatchObject({
-      settings: { key: 'G', progression: 2, tempo: 60, loops: 4, focus: null },
+      settings: { key: 'G', progression: 2, tempo: 60, loops: 4 },
       attempts: [attempt()],
     });
     expect(readConnectionProgress('seventh').attempts).toEqual([]);

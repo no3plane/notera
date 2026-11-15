@@ -10,7 +10,6 @@ import type { Mode } from './exercises';
 import type { PracticeChordFamily } from './chordHarmony';
 import { DIATONIC_SUS_MODE } from './diatonicSus';
 import { isPracticeMode } from './practiceNavigation';
-import { readConnectionProgress } from './connectionPractice';
 
 export const CHORD_TASK_GROUPS = [
   {
@@ -26,7 +25,6 @@ export const CHORD_TASK_GROUPS = [
     tasks: [
       { id: 'recall', label: '看题按弦' },
       { id: 'connection', label: '和弦连接' },
-      { id: 'pairs', label: '两和弦专项' },
       { id: 'resolve', label: '挂留与解决', susOnly: true },
     ],
   },
@@ -49,8 +47,6 @@ export function modeForChordTask(task: ChordTask, family: PracticeChordFamily): 
       return CONNECTION_MODES.sus;
     case 'connection':
       return CONNECTION_MODES[family === 'sus' ? 'triad' : family];
-    case 'pairs':
-      return CONNECTION_MODES[family];
     default:
       return GUITAR_CHORD_MODES[family];
   }
@@ -92,7 +88,5 @@ export function readChordTask(mode: Mode): ChordTask {
       /* Use the reference if storage is unavailable. */
     }
   }
-  if (family && isConnectionMode(mode) && readConnectionProgress(family).settings.focus)
-    return 'pairs';
   return defaultChordTask(mode);
 }

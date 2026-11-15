@@ -30,7 +30,6 @@ export interface ConnectionSettings {
   tempo: number;
   loops: number;
   display: 'names' | 'degrees';
-  focus: ConnectionLink | null;
 }
 export interface ConnectionAttempt {
   at: number;
@@ -74,7 +73,6 @@ export function readConnectionProgress(
     tempo: 60,
     loops: 4,
     display: 'names',
-    focus: null,
   };
   const fallback = { settings, attempts: [] };
   try {
@@ -92,7 +90,6 @@ export function readConnectionProgress(
     if (isTempo(saved.tempo)) settings.tempo = saved.tempo;
     if (isLoops(saved.loops)) settings.loops = saved.loops;
     if (saved.display === 'names' || saved.display === 'degrees') settings.display = saved.display;
-    if (isLink(saved.focus)) settings.focus = saved.focus;
     const attempts: ConnectionAttempt[] = Array.isArray(data.attempts)
       ? data.attempts
           .filter(

@@ -16,7 +16,6 @@ import {
   readLastChordPractice,
 } from '../lib/chordPracticeNavigation';
 import type { ChordTask } from '../lib/chordPracticeNavigation';
-import type { ConnectionLink } from '../lib/connectionPractice';
 import { DiatonicSusOverview } from '../components/DiatonicSusOverview';
 import {
   chordFamilyForMode,
@@ -64,7 +63,6 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const family = chordFamilyForMode(mode);
   const [preferredFamily, setPreferredFamily] = useState(() => family ?? readChordFamily());
   const [chordTask, setChordTask] = useState(() => readChordTask(mode));
-  const [pairFocus, setPairFocus] = useState<ConnectionLink | null>(null);
   const [overview, setOverview] = useState(true);
   const topic = TOPICS.find((t) => modesForTopic(t, family ?? 'triad').includes(mode))!;
   const topicModes = modesForTopic(topic, family ?? 'triad');
@@ -72,14 +70,12 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const diatonic = mode === DIATONIC_SUS_MODE;
   const showOverview = diatonic && overview;
   function changeMode(value: Mode, task = defaultChordTask(value)) {
-    setPairFocus(null);
     setChordTask(task);
     setOverview(value === DIATONIC_SUS_MODE);
     start('basic', value);
   }
-  function changeTask(task: ChordTask, focus: ConnectionLink | null = null) {
+  function changeTask(task: ChordTask) {
     changeMode(modeForChordTask(task, family ?? preferredFamily), task);
-    setPairFocus(focus);
   }
   function changeFamily(value: PracticeChordFamily) {
     if (value === family) return;
@@ -275,14 +271,6 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
               key={`${family}:${chordTask}`}
               family={family!}
               familySwitch={familySwitch}
-              task={chordTask === 'pairs' ? 'pairs' : 'connection'}
-              initialFocus={pairFocus}
-              onTaskChange={(task, focus) =>
-                changeTask(
-                  task === 'pairs' ? task : family === 'sus' ? 'resolve' : 'connection',
-                  focus,
-                )
-              }
             />
           ) : guitar ? (
             family === 'sus' ? (
