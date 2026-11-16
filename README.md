@@ -124,34 +124,8 @@ pnpm format       # 格式化代码与文档
 
 音程判断题用 1–8 选择度数；「和弦名 → 构成音」用 1–7 选择对应简谱音，再按同一数字取消，最多选三个；和弦名选项使用点击选择，不提供数字快捷键。Space 播放当前允许试听的音；Enter 提交或进入下一题。弦间音程分两排点选性质与度数，选齐立即判分；指板认音可用 1–7 直接回答自然级数；找音在指定弦点击位置，找对后可用 Enter 继续（焦点不在按钮上时）。
 
-## 代码结构
+## 开发约定
 
-```text
-src/
-  App.tsx                  应用入口与题目显示偏好
-  main.tsx                 React 入口
-  styles.css               响应式界面
-  pages/PracticePage.tsx    专题切换、练习与分项进度
-  components/              题目显示、作答与反馈
-  hooks/useAudio.ts        Web Audio 生命周期
-  hooks/usePractice.ts     练习状态、记录保存与计时
-  lib/notation.ts          四种表示形式、简谱与固定唱名
-  lib/theory.ts            音名、半音、音程计算
-  lib/exercises.ts         独立练习分类、模式与和弦题库
-  lib/practiceNavigation.ts 上次练习与直接链接
-  lib/connectionPractice.ts 连接设置与历史数据兼容
-  lib/connectionSuspensions.ts 调内挂留编排与可移动指法
-  components/ChordConnectionPractice.tsx 共享的跟拍连接练习
-  lib/stringIntervals.ts   弦间音名关系、双向弦对出题与独立记录
-  lib/fretboard.ts         指板随机出题、接力关系、判分与定位记录
-  lib/sameNote.ts          同音搬运形状、分阶段出题、校验与独立记录
-  lib/fretboardMemory.ts   旧整图默写记录兼容
-  lib/practice.ts          独立题型队列与纯函数状态机
-  lib/progress.ts          旧记录读取、校验与存储
-  lib/types.ts             领域类型
-tests/                     乐理、练习与 React 回归测试
-```
-
-UI 使用 JSX 和 React 状态更新，不通过 `innerHTML` 或全局 DOM 事件委托绘制页面。选择答案不会重新挂载按钮或练习区域。
+UI 使用 JSX 和 React 状态更新，不通过 `innerHTML` 或全局 DOM 事件委托绘制页面。选择答案时应保持按钮和练习区域的组件实例，避免重新挂载。
 
 乐理参考：[Music Theory for the 21st-Century Classroom](https://musictheory.pugetsound.edu/mt21c/AugmentedAndDiminishedIntervals.html)。
