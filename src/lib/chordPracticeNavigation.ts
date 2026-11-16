@@ -17,6 +17,7 @@ export const CHORD_TASK_GROUPS = [
     tasks: [
       { id: 'tones', label: '和弦名 → 构成音' },
       { id: 'identify', label: '构成音 → 和弦名' },
+      { id: 'intervals', label: '指型音程' },
       { id: 'diatonic', label: '调内挂留判断', susOnly: true },
     ],
   },

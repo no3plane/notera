@@ -1,0 +1,233 @@
+.chord-interval-practice {
+  --interval-fret-step: 56px;
+  --interval-line: #cbd2c6;
+  --interval-muted: #5c685b;
+  --interval-error: #a33d35;
+  min-width: 0;
+}
+.chord-interval-scope {
+  margin: 0 0 20px;
+}
+.chord-interval-stage {
+  max-width: 600px;
+  margin-inline: auto;
+  padding: 24px;
+  background: var(--white);
+  border-radius: 12px;
+}
+.chord-interval-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 20px;
+}
+.chord-interval-tab-group {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--interval-group-tabs), minmax(0, 1fr));
+  gap: 4px;
+  padding-right: 10px;
+}
+.chord-interval-tab-group + .chord-interval-tab-group {
+  padding-right: 0;
+  padding-left: 10px;
+}
+.chord-interval-tab-group + .chord-interval-tab-group::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 1px;
+  background: var(--interval-line);
+}
+.chord-interval-tabs button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--interval-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.chord-interval-tabs button:hover:not(:disabled),
+.chord-interval-tabs button[aria-pressed='true'] {
+  color: var(--ink);
+  background: var(--practice-active);
+}
+.chord-interval-neck {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: calc(57px + 4 * var(--interval-fret-step));
+  margin: 0 auto 28px;
+}
+.chord-interval-wire {
+  position: absolute;
+  left: 24px;
+  right: 0;
+  height: 1px;
+  background: var(--interval-line);
+  pointer-events: none;
+}
+.chord-interval-wire.is-nut {
+  height: 5px;
+  background: var(--interval-muted);
+}
+.chord-interval-string {
+  position: absolute;
+  top: 56px;
+  bottom: 0;
+  background: var(--interval-line);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.chord-interval-fret {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  color: var(--interval-muted);
+  font-size: 12px;
+}
+.chord-interval-point,
+.chord-interval-muted {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.chord-interval-point {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1.5px solid var(--interval-muted);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+  transition:
+    background 150ms,
+    outline-color 150ms;
+}
+.chord-interval-point.is-fretted {
+  background: var(--ink);
+  color: var(--white);
+  border-color: var(--ink);
+}
+.chord-interval-point:hover:not(:disabled) {
+  transform: translate(-50%, -50%);
+}
+.chord-interval-point[aria-pressed='true'] {
+  outline: 3px solid var(--green);
+  outline-offset: 4px;
+}
+.chord-interval-point[data-result='correct'] {
+  border: 3px solid var(--green);
+}
+.chord-interval-point[data-result='wrong'] {
+  border: 3px solid var(--interval-error);
+}
+.chord-interval-mark {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 12px;
+  background: var(--green-dark);
+  color: var(--white);
+}
+.chord-interval-point[data-result='wrong'] .chord-interval-mark {
+  background: var(--interval-error);
+}
+.chord-interval-muted {
+  color: var(--interval-muted);
+  font-size: 20px;
+}
+.chord-interval-choices {
+  display: grid;
+  grid-template-columns: repeat(var(--interval-choice-count), minmax(0, 1fr));
+  gap: 8px;
+}
+.chord-interval-choices button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 0;
+  border: 1px solid var(--interval-line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--white);
+  font-size: 16px;
+}
+.chord-interval-choices button:hover:not(:disabled) {
+  background: var(--soft);
+}
+.chord-interval-choices button[aria-pressed='true'] {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+  color: var(--white);
+}
+.chord-interval-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+}
+.chord-interval-actions > button {
+  flex-shrink: 0;
+  margin-left: auto;
+  min-height: 44px;
+  padding: 10px 16px;
+}
+.chord-interval-result {
+  font-size: 13px;
+  color: var(--interval-muted);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .chord-interval-practice {
+    --interval-fret-step: 48px;
+  }
+  .chord-interval-stage {
+    padding: 18px 12px;
+  }
+  .chord-interval-neck {
+    max-width: 360px;
+  }
+  .chord-interval-tab-group {
+    grid-template-columns: repeat(min(var(--interval-group-tabs), 2), minmax(0, 1fr));
+  }
+  .chord-interval-choices {
+    grid-template-columns: repeat(min(var(--interval-choice-count), 5), minmax(0, 1fr));
+  }
+  .chord-interval-point {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (max-width: 420px) {
+  .chord-interval-stage {
+    padding-inline: 0;
+  }
+  .chord-interval-tabs,
+  .chord-interval-choices,
+  .chord-interval-actions {
+    margin-inline: 12px;
+  }
+}
+@media (pointer: coarse) {
+  .chord-interval-point {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chord-interval-practice button {
+    transition: none;
+  }
+}

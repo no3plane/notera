@@ -31,7 +31,7 @@ it('removes pair practice from desktop, mobile and connection controls', () => {
   expect(screen.queryByRole('button', { name: '两和弦专项' })).toBeNull();
   expect(
     within(screen.getByRole('combobox', { name: '当前练习' })).getAllByRole('option'),
-  ).toHaveLength(6);
+  ).toHaveLength(7);
   expect(screen.queryByRole('option', { name: '两和弦专项' })).toBeNull();
   click('和弦连接');
   expect(screen.queryByText('拆开练一对')).toBeNull();

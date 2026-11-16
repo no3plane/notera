@@ -7,6 +7,7 @@ import { GuitarChordPractice } from '../components/GuitarChordPractice';
 import { GuitarSusPractice } from '../components/GuitarSusPractice';
 import { ChordConnectionPractice } from '../components/ChordConnectionPractice';
 import { ChordTaskNavigation } from '../components/ChordTaskNavigation';
+import { ChordIntervalPractice } from '../components/ChordIntervalPractice';
 import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import {
   CHORD_NAVIGATION_KEY,
@@ -269,7 +270,9 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
               </div>
             </PracticeModeToolbar>
           )}
-          {connection ? (
+          {guitar && chordTask === 'intervals' ? (
+            <ChordIntervalPractice key={family} family={family} familySwitch={familySwitch} />
+          ) : connection ? (
             <ChordConnectionPractice
               key={`${family}:${chordTask}`}
               family={family === 'seventh' ? 'seventh' : 'triad'}
