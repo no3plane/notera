@@ -2,7 +2,7 @@ import type { PracticeChordFamily } from './chordHarmony';
 import { majorKeyChords } from './chordHarmony';
 import { GUITAR_KEYS, chordsInKey, voicingDegrees, voicingFor } from './guitarChords';
 import type { ChordVoicing } from './guitarChords';
-import { SUS_GUITAR_GROUPS } from './guitarSusChords';
+import { susGuitarShapes } from './guitarSusChords';
 import type { Note } from './types';
 
 export const CHORD_INTERVAL_ROLES = ['R', '2', 'b3', '3', '4', 'b5', '5', 'b7', '7'] as const;
@@ -21,7 +21,7 @@ export const CHORD_INTERVAL_LABELS: Record<ChordIntervalRole, string> = {
 export const CHORD_INTERVAL_CHOICES: Record<PracticeChordFamily, readonly ChordIntervalRole[]> = {
   triad: ['R', 'b3', '3', 'b5', '5'],
   seventh: ['R', 'b3', '3', 'b5', '5', 'b7', '7'],
-  sus: ['R', '2', '3', '4', '5'],
+  sus: ['R', '2', '3', '4', '5', 'b7', '7'],
 };
 export interface ChordIntervalQuestion {
   id: string;
@@ -62,8 +62,7 @@ export function chordIntervalQuestions(family: PracticeChordFamily): ChordInterv
   const questions: ChordIntervalQuestion[] = [];
   if (family === 'sus') {
     for (const root of ['E', 'A'] as const) {
-      const { comparison } = SUS_GUITAR_GROUPS[root];
-      for (const shape of [comparison[0], comparison[2]]) {
+      for (const shape of susGuitarShapes(root)) {
         questions.push(question(shape, shape.voicing));
       }
     }

@@ -23,6 +23,7 @@ const formulas = {
   '7sus4': [0, 5, 7, 10],
   '7sus2': [0, 2, 7, 10],
   maj7sus2: [0, 2, 7, 11],
+  maj7sus4: [0, 5, 7, 11],
 } as const;
 
 describe('musical suspension arrangements', () => {

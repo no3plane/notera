@@ -19,7 +19,7 @@ const semitones = { R: 0, '2': 2, b3: 3, '3': 4, '4': 5, b5: 6, '5': 7, b7: 10, 
 describe('chord interval material', () => {
   it.each(PRACTICE_CHORD_FAMILIES)('validates every string and fret window in %s', (family) => {
     const questions = chordIntervalQuestions(family);
-    expect(questions).toHaveLength({ triad: 6, seventh: 8, sus: 4 }[family]);
+    expect(questions).toHaveLength({ triad: 6, seventh: 8, sus: 12 }[family]);
     const basics = questions.filter((q) => !['Fm7(b5)', 'Bm7(b5)'].includes(q.symbol));
     expect(basics.every((q) => q.voicing.rootFret === 0)).toBe(true);
     expect(
@@ -69,6 +69,29 @@ describe('chord interval material', () => {
     expect(suspended[0].symbol).toBe('Esus2');
     expect(suspended[0].answers).toEqual(['R', '5', 'R', null, '5', '2']);
     expect(suspended[1].answers).toEqual(['R', '5', 'R', '4', '5', 'R']);
+  });
+
+  it('includes both suspensions with each seventh, without duplicating minor origins', () => {
+    const questions = chordIntervalQuestions('sus');
+    for (const root of ['E', 'A']) {
+      const shapes = questions.filter((q) => q.symbol.startsWith(root));
+      expect(shapes.map((q) => q.symbol).sort()).toEqual(
+        ['sus2', 'sus4', '7sus2', '7sus4', 'maj7sus2', 'maj7sus4']
+          .map((suffix) => root + suffix)
+          .sort(),
+      );
+      for (const item of shapes) {
+        expect(item.answers).not.toContain('3');
+        expect(item.answers).not.toContain('b3');
+        if (item.symbol.includes('maj7')) {
+          expect(item.answers).toContain('7');
+          expect(item.answers).not.toContain('b7');
+        } else if (item.symbol.includes('7')) {
+          expect(item.answers).toContain('b7');
+          expect(item.answers).not.toContain('7');
+        }
+      }
+    }
   });
 
   it.each([

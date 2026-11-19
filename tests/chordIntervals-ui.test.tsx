@@ -168,3 +168,34 @@ it('selects the requested F/B half-diminished examples with their updated interv
   fireEvent.click(screen.getByRole('button', { name: '检查答案' }));
   expect(screen.getByRole('status').textContent).toBe('全部正确 ✓');
 });
+
+it('answers and restores seventh suspension intervals for both shapes', () => {
+  const view = render(<ChordIntervalPractice family="sus" />);
+  const questions = chordIntervalQuestions('sus');
+  expect(
+    within(screen.getByRole('group', { name: '选择和弦' })).getAllByRole('button'),
+  ).toHaveLength(12);
+  for (const symbol of [
+    'E7sus2',
+    'E7sus4',
+    'Emaj7sus2',
+    'Emaj7sus4',
+    'A7sus2',
+    'A7sus4',
+    'Amaj7sus2',
+    'Amaj7sus4',
+  ]) {
+    fireEvent.click(screen.getByRole('button', { name: symbol }));
+    questions
+      .find((q) => q.symbol === symbol)!
+      .answers.filter((role) => role !== null)
+      .forEach(choose);
+    fireEvent.click(screen.getByRole('button', { name: '检查答案' }));
+    expect(screen.getByRole('status').textContent).toBe('全部正确 ✓');
+  }
+  view.unmount();
+  render(<ChordIntervalPractice family="sus" />);
+  expect(screen.getByRole('button', { name: 'Amaj7sus4', pressed: true })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '第3弦，7，正确' })).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toBe('全部正确 ✓');
+});

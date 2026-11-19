@@ -16,6 +16,7 @@ import {
 import type { SusGuitarRoot } from '../lib/guitarSusChords';
 import { name } from '../lib/theory';
 import { ChordDiagram } from './ChordDiagram';
+import { GuitarSusReference } from './GuitarSusReference';
 import './guitarChords.css';
 
 export function GuitarSusPractice({
@@ -30,18 +31,19 @@ export function GuitarSusPractice({
   const [progress, setProgress] = useState(readSusGuitarProgress);
   const [task, setTask] = useState(initialTask ?? 'reference');
   const [referenceOpen, setReferenceOpen] = useState(false);
-  const recall = useChordRecall(4);
+  const { root } = progress;
+  const tasks = susGuitarTasks(root);
+  const recall = useChordRecall(tasks.length);
   const [storageError, setStorageError] = useState(false);
   const [audioError, setAudioError] = useState('');
   const play = useAudio(setAudioError);
   const heading = useRef<HTMLHeadingElement>(null);
-  const { root } = progress;
-  const { comparison, comparisonHint } = SUS_GUITAR_GROUPS[root];
-  const [, major, sus4] = comparison;
+  const { quality, sequence } = tasks[recall.item];
+  const { comparison } = SUS_GUITAR_GROUPS[root][quality];
+  const [, base] = comparison;
   const overview = task === 'reference' || referenceOpen;
-  const sequence = susGuitarTasks(root)[recall.item];
-  const movingStrings = changedStrings(overview ? comparison : sequence);
-  const shapes = overview ? comparison : recall.revealed ? sequence : [];
+  const movingStrings = changedStrings(sequence);
+  const shapes = recall.revealed ? sequence : [];
 
   useEffect(() => {
     try {
@@ -151,127 +153,136 @@ export function GuitarSusPractice({
           </button>
         </div>
       )}
-      <div className="guitar-layout">
-        <div className="guitar-board">
-          <div className="guitar-board-header">
-            <span>
-              {root} 型 · 第 {major.voicing.rootString} 弦根音
-            </span>
-            <span>{overview ? '三个和弦' : `本轮已练 ${recall.index} / 4 次切换`}</span>
-          </div>
-          <div className="guitar-stage-toolbar">
-            <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
-              {overview ? `对照 ${root} 型的三种按法` : '按顺序换一次和弦'}
-            </h2>
-            {!overview && (
-              <button
-                className="guitar-text-button"
-                onClick={() => {
-                  setReferenceOpen(true);
-                  setAudioError('');
-                  heading.current?.focus();
-                }}
-              >
-                查看本组指法
-              </button>
-            )}
-          </div>
-          {overview && (
-            <>
-              <p className="guitar-description">
-                从 {root} 出发，分别换到 {comparison[0].symbol} 和 {sus4.symbol}，再弹回 {root}。
-                {comparisonHint}
-              </p>
-              <div className="guitar-overview-start">
-                <span>4 种切换各练一次后自动继续，随时可以换组。</span>
-                <button className="guitar-primary" onClick={start}>
-                  {referenceOpen ? '返回当前题' : '开始看题按弦 →'}
+      {overview ? (
+        <GuitarSusReference
+          root={root}
+          headingRef={heading}
+          returning={referenceOpen}
+          onPractice={start}
+          onListen={(shape) => {
+            setAudioError('');
+            void play(voicingNotes(shape.voicing), 'strum');
+          }}
+        />
+      ) : (
+        <div className="guitar-layout">
+          <div className="guitar-board">
+            <div className="guitar-board-header">
+              <span>
+                {root} 型 · 第 {base.voicing.rootString} 弦根音
+              </span>
+              <span>{`本轮已练 ${recall.index} / ${recall.size} 次切换`}</span>
+            </div>
+            <div className="guitar-stage-toolbar">
+              <h2 ref={heading} tabIndex={-1} className="guitar-stage-heading">
+                按顺序换一次和弦
+              </h2>
+              {!overview && (
+                <button
+                  className="guitar-text-button"
+                  onClick={() => {
+                    setReferenceOpen(true);
+                    setAudioError('');
+                    heading.current?.focus();
+                  }}
+                >
+                  查看本组指法
                 </button>
-              </div>
-            </>
-          )}
-          {!overview && (
-            <>
-              <p className="guitar-description">
-                先在吉他上弹出两个和弦，留意哪些弦上的按法发生变化。
-              </p>
-              <p className="guitar-sus-sequence" aria-live="polite">
-                {susTaskName(sequence)}
-              </p>
-            </>
-          )}
-          {shapes.length > 0 && (
-            <>
-              <div className="guitar-sus-voicings">
-                {shapes.map((shape) => (
-                  <div className="guitar-sus-shape" key={shape.symbol}>
-                    <h3>{shape.symbol}</h3>
-                    <p>{shape.tones.map((note) => name(note, false)).join(' · ')}</p>
-                    <ChordDiagram
-                      chord={shape}
-                      voicing={shape.voicing}
-                      movingStrings={
-                        comparison.some((item) => item === shape) ? movingStrings : undefined
-                      }
-                      compact
-                    />
-                    <button
-                      className="guitar-text-button guitar-listen"
-                      aria-label={`试听 ${shape.symbol}`}
-                      onClick={() => {
-                        setAudioError('');
-                        void play(voicingNotes(shape.voicing), 'strum');
-                      }}
-                    >
-                      试听
+              )}
+            </div>
+            {!overview && (
+              <>
+                <p className="guitar-description">
+                  三和弦与七和弦混合练习。先弹出题目中的两个和弦，留意哪些弦上的按法发生变化。
+                </p>
+                <p className="guitar-sus-sequence" aria-live="polite">
+                  {susTaskName(sequence)}
+                </p>
+              </>
+            )}
+            {shapes.length > 0 && (
+              <>
+                <div className="guitar-sus-voicings">
+                  {shapes.map((shape) => (
+                    <div className="guitar-sus-shape" key={shape.symbol}>
+                      <h3>{shape.symbol}</h3>
+                      <p>{shape.tones.map((note) => name(note, false)).join(' · ')}</p>
+                      <ChordDiagram
+                        chord={shape}
+                        voicing={shape.voicing}
+                        movingStrings={
+                          comparison.some((item) => item === shape) ? movingStrings : undefined
+                        }
+                        compact
+                      />
+                      <button
+                        className="guitar-text-button guitar-listen"
+                        aria-label={`试听 ${shape.symbol}`}
+                        onClick={() => {
+                          setAudioError('');
+                          void play(voicingNotes(shape.voicing), 'strum');
+                        }}
+                      >
+                        试听
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="guitar-sus-legend">
+                  下排音级 6 → 1 弦 · R 为根音（1）
+                  <br />
+                  绿线为变化弦 · 圆内标指法 · × 不弹 · ○ 空弦
+                </p>
+              </>
+            )}
+            {!overview &&
+              (recall.revealed ? (
+                <>
+                  <p className="guitar-self-check">对照指法，检查变化弦的声音。</p>
+                  <div className="guitar-bottom">
+                    <button className="guitar-primary" onClick={next}>
+                      下一题
                     </button>
                   </div>
-                ))}
-              </div>
-              <p className="guitar-sus-legend">
-                下排音级 6 → 1 弦 · R 为根音（1）
-                <br />
-                绿线为变化弦 · 圆内标指法 · × 不弹 · ○ 空弦
-              </p>
-              {audioError && <p role="status">{audioError}</p>}
-            </>
-          )}
-          {!overview &&
-            (recall.revealed ? (
-              <>
-                <p className="guitar-self-check">对照指法，检查变化弦的声音。</p>
+                </>
+              ) : (
                 <div className="guitar-bottom">
-                  <button className="guitar-primary" onClick={next}>
-                    下一题
+                  <span>空格揭晓 · Enter 下一题</span>
+                  <button className="guitar-primary" onClick={recall.reveal}>
+                    弹好了，核对指法
                   </button>
                 </div>
-              </>
-            ) : (
-              <div className="guitar-bottom">
-                <span>空格揭晓 · Enter 下一题</span>
-                <button className="guitar-primary" onClick={recall.reveal}>
-                  弹好了，核对指法
-                </button>
-              </div>
-            ))}
-        </div>
-        <aside className="guitar-aside">
-          <h3>保留根音和五音</h3>
-          <p>对照按法，找出实际发出二音、三音或四音的弦。</p>
-          <div className="guitar-formula">
-            <span>以 {root} 为根音</span>
-            <dl className="guitar-quality-list">
-              {comparison.map((shape) => (
-                <div key={shape.symbol}>
-                  <dt>{shape.symbol}</dt>
-                  <dd>{shape.formula}</dd>
-                </div>
               ))}
-            </dl>
           </div>
-          {storageError && <p role="status">浏览器暂时无法保存设置，当前仍可继续练习。</p>}
-        </aside>
-      </div>
+          <aside className="guitar-aside">
+            <h3>
+              {quality === 'major' || quality === 'minor'
+                ? '保留根音和五音'
+                : quality === 'maj7'
+                  ? '保留根音、五音和大七音'
+                  : '保留根音、五音和小七音'}
+            </h3>
+            <p>对照按法，找出实际发出二音、三音或四音的弦。</p>
+            <p>
+              挂留用二音或四音替换三音，因此 {root} 和 {root}m 共用 sus 按法，{root}7 和 {root}m7
+              共用 7sus 按法；恢复时回到题目中的原和弦。
+            </p>
+            <div className="guitar-formula">
+              <span>以 {root} 为根音</span>
+              <dl className="guitar-quality-list">
+                {comparison.map((shape) => (
+                  <div key={shape.symbol}>
+                    <dt>{shape.symbol}</dt>
+                    <dd>{shape.formula}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </aside>
+        </div>
+      )}
+      {audioError && <p role="status">{audioError}</p>}
+      {storageError && <p role="status">浏览器暂时无法保存设置，当前仍可继续练习。</p>}
     </section>
   );
 }

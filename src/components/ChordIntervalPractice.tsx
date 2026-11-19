@@ -99,11 +99,12 @@ export function ChordIntervalPractice({
       <div className="chord-interval-stage">
         <div
           className="chord-interval-tabs"
+          data-family={family}
           role="group"
           aria-label="选择和弦"
           style={
             {
-              '--interval-group-tabs': chordTabs.length / 2,
+              '--interval-group-tabs': family === 'sus' ? 2 : chordTabs.length / 2,
             } as CSSProperties
           }
         >

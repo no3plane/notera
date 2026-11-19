@@ -1,0 +1,206 @@
+.sus-reference {
+  container: sus-reference / inline-size;
+  margin-top: 24px;
+}
+.sus-reference-header,
+.sus-reference-band-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.sus-reference-header p,
+.sus-reference-hint {
+  margin: 8px 0 0;
+  color: var(--guitar-secondary);
+  font-size: 13px;
+}
+.sus-reference-header > button {
+  flex: none;
+}
+.sus-reference-hint {
+  margin-bottom: 24px;
+}
+.sus-reference-bands {
+  display: grid;
+  gap: 24px;
+}
+.sus-reference-band {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--white);
+}
+.sus-reference-band-heading {
+  margin-bottom: 16px;
+}
+.sus-reference-band-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.sus-reference-band-heading > span {
+  color: var(--guitar-secondary);
+  font-size: 12px;
+}
+/* Two shared suspensions flank one or two source shapes; every column shares its baseline. */
+.sus-reference-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px minmax(0, var(--sus-source-width)) 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+.sus-reference-sources {
+  grid-column: 3;
+  grid-row: 1;
+  padding: 12px 8px;
+  border-radius: 6px;
+  background: var(--guitar-raised);
+}
+.sus-reference-source-label {
+  margin: 0 0 10px;
+  color: var(--guitar-secondary);
+  text-align: center;
+  font-size: 13px;
+}
+.sus-reference-source-shapes {
+  display: flex;
+  gap: 12px;
+}
+.sus-reference-source-shapes > * {
+  flex: 1;
+  min-width: 0;
+}
+.sus-reference-target {
+  grid-row: 1;
+  min-width: 0;
+  padding: 43px 7px 0;
+}
+.sus-reference-target.is-second {
+  grid-column: 1;
+}
+.sus-reference-target.is-fourth {
+  grid-column: 5;
+}
+.sus-reference-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  grid-row: 1;
+  align-self: center;
+  color: var(--green-dark);
+  font-size: 12px;
+}
+.sus-reference-arrow.is-left {
+  grid-column: 2;
+}
+.sus-reference-arrow.is-right {
+  grid-column: 4;
+}
+.sus-reference-arrow svg {
+  display: block;
+  width: 40px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sus-reference-branch {
+  display: none;
+}
+.sus-reference-shape {
+  min-width: 0;
+  text-align: center;
+}
+.sus-reference-shape h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.sus-reference-formula,
+.sus-reference-tones {
+  margin: 4px 0;
+  color: var(--guitar-secondary);
+  font-size: 13px;
+}
+.sus-reference-shape .chord-diagram {
+  margin: 8px 0 0;
+}
+.sus-reference-shape .chord-diagram svg {
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  margin-inline: auto;
+}
+.sus-reference-shape figcaption {
+  display: none;
+}
+.sus-reference > .guitar-sus-legend {
+  margin-top: 20px;
+}
+@container sus-reference (max-width: 640px) {
+  .sus-reference-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .sus-reference-header > button {
+    align-self: flex-end;
+  }
+  .sus-reference-band {
+    padding: 16px;
+  }
+  .sus-reference-band-heading {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  .sus-reference-flow {
+    grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
+    grid-template-rows: auto 60px auto;
+    gap: 8px 0;
+  }
+  .sus-reference-sources {
+    grid-column: 1 / -1;
+  }
+  .sus-reference-arrow {
+    display: none;
+  }
+  .sus-reference-branch {
+    position: relative;
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 60px;
+    color: var(--green-dark);
+  }
+  .sus-reference-branch svg {
+    width: 100%;
+    height: 60px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .sus-reference-branch span {
+    position: absolute;
+    top: 30px;
+    font-size: 12px;
+    transform: translateX(-100%);
+  }
+  .sus-reference-branch .is-second {
+    left: calc(25% - 12px);
+  }
+  .sus-reference-branch .is-fourth {
+    left: calc(75% - 12px);
+  }
+  .sus-reference-target {
+    grid-row: 3;
+    padding: 0;
+  }
+  .sus-reference-target.is-fourth {
+    grid-column: 3;
+  }
+}

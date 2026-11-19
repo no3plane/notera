@@ -2,7 +2,7 @@ import type { GuitarChord, ChordVoicing, GuitarKey } from './guitarChords';
 import { chordsInKey } from './guitarChords';
 import { midi, name, transpose } from './theory';
 
-export type SuspensionKind = 'sus2' | 'sus4' | '7sus4' | '7sus2' | 'maj7sus2';
+export type SuspensionKind = 'sus2' | 'sus4' | '7sus4' | '7sus2' | 'maj7sus2' | 'maj7sus4';
 export interface SuspensionShape {
   symbol: string;
   tones: GuitarChord['tones'];
@@ -56,8 +56,9 @@ export function suspensionShape(
       frets = [null, r, r + 2, r + 2, r + 3, r];
       fingers = r ? [null, 1, 2, 3, 4, 1] : [null, 0, 1, 2, 3, 0];
     } else {
-      frets = [null, r, r + 2, r, r + 3, r];
-      fingers = r ? [null, 1, 3, 1, 4, 1] : [null, 0, 2, 0, 3, 0];
+      const seventh = kind === 'maj7sus4' ? 1 : 0;
+      frets = [null, r, r + 2, r + seventh, r + 3, r];
+      fingers = r ? [null, 1, 3, seventh ? 2 : 1, 4, 1] : [null, 0, 2, seventh ? 1 : 0, 3, 0];
     }
   } else if (kind === '7sus2' || kind === 'maj7sus2') {
     const seventh = kind === 'maj7sus2' ? 1 : 0;
@@ -70,8 +71,9 @@ export function suspensionShape(
     frets = [r, r + 2, r + 2, r + 2, r, r];
     fingers = r ? [1, 3, 4, 2, 1, 1] : [0, 2, 3, 4, 0, 0];
   } else {
-    frets = [r, r + 2, r, r + 2, r, r];
-    fingers = r ? [1, 3, 1, 4, 1, 1] : [0, 2, 0, 3, 0, 0];
+    const seventh = kind === 'maj7sus4' ? 1 : 0;
+    frets = [r, r + 2, r + seventh, r + 2, r, r];
+    fingers = r ? [1, 3, seventh ? 2 : 1, 4, 1, 1] : [0, 2, seventh ? 1 : 0, 3, 0, 0];
   }
   const root = chord.root;
   const second = kind.endsWith('sus2');
@@ -79,7 +81,7 @@ export function suspensionShape(
     root,
     transpose(root, second ? 2 : 4, second ? 2 : 5, 1),
     transpose(root, 5, 7, 1),
-    ...(kind === 'maj7sus2'
+    ...(kind.startsWith('maj7')
       ? [transpose(root, 7, 11, 1)]
       : kind.startsWith('7')
         ? [transpose(root, 7, 10, 1)]

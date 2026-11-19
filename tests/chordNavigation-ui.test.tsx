@@ -101,11 +101,11 @@ it('stops playback when selecting another task', () => {
 it('continues suspended recall after a round and permits changing groups immediately', () => {
   history.replaceState(null, '', '/?practice=guitar-sus-chords&task=recall');
   render(<App />);
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 20; i++) {
     click('弹好了，核对指法');
     click('下一题');
   }
-  expect(screen.getByText('本轮已练 0 / 4 次切换')).toBeTruthy();
+  expect(screen.getByText('本轮已练 0 / 20 次切换')).toBeTruthy();
   choose('开放指法组', 'A');
   expect(screen.getByRole('button', { name: '看题按弦', pressed: true })).toBeTruthy();
   expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
