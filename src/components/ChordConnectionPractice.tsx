@@ -24,6 +24,7 @@ import { connectionSuspensions, SUSPENSION_USAGES } from '../lib/connectionSuspe
 import type { SuspensionBeat } from '../lib/connectionSuspensions';
 import { readSusGuitarProgress } from '../lib/guitarSusChords';
 import { ChordDiagram } from './ChordDiagram';
+import { RandomKeyButton } from './RandomKeyButton';
 import { ProgressionPicker } from './ProgressionPicker';
 import { CHORD_PROGRESSIONS, progressionDegree } from '../lib/chordProgressions';
 import { name } from '../lib/theory';
@@ -207,6 +208,7 @@ export function ChordConnectionPractice({
             ))}
           </select>
         </label>
+        <RandomKeyButton currentKey={key} onChange={changeKey} disabled={active} />
       </div>
       <div className="connection-layout">
         <section

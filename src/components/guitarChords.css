@@ -80,6 +80,9 @@ body:has(.guitar-practice) .topic-tabs button {
 .guitar-scope > button {
   margin-left: auto;
 }
+.guitar-scope > .guitar-random-key {
+  margin-left: 0;
+}
 .guitar-steps {
   display: flex;
   margin: 24px 0;

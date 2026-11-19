@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChordVoicingOptions } from './ChordVoicingOptions';
+import { RandomKeyButton } from './RandomKeyButton';
 import { connectionStorageKey, readConnectionProgress } from '../lib/connectionPractice';
 import { useAudio } from '../hooks/useAudio';
 import { useChordRecall } from '../hooks/useChordRecall';
@@ -181,6 +182,7 @@ export function GuitarChordPractice({
             ))}
           </select>
         </label>
+        <RandomKeyButton currentKey={key} onChange={changeKey} />
         <span>标准调弦 E A D G B E · 根音在第五 / 六弦</span>
       </div>
       {!onTaskChange && (
