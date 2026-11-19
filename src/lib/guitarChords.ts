@@ -39,7 +39,8 @@ function seventhVoicing(quality: SeventhQuality, rootString: RootString, r: numb
   if (rootString === 5) {
     switch (quality) {
       case 'maj7':
-        return shape([null, r, r + 2, r + 1, r + 2, null], [null, 1, 3, 2, 4, null]);
+        // Move the open Amaj7 shape: R, 5, 7, 3, 5.
+        return shape([null, r, r + 2, r + 1, r + 2, r], [null, 1, 3, 2, 4, 1], 5);
       case 'm7':
         return shape([null, r, r + 2, r, r + 1, r], [null, 1, r ? 3 : 2, 1, r ? 2 : 1, 1], 5);
       case '7':

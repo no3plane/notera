@@ -156,6 +156,36 @@ describe('guitar chord harmony and fingerings', () => {
       }
     }
   });
+  it('sounds the first-string fifth in every Amaj7 shape, including open A and fret 12', () => {
+    for (const [key] of GUITAR_KEYS) {
+      for (const chord of chordsInKey(key, 'seventh').filter((chord) => chord.quality === 'maj7')) {
+        for (const voicing of voicingsFor(chord).filter((shape) => shape.rootString === 5)) {
+          const context = `${key} ${chord.symbol}, fret ${voicing.rootFret}`;
+          expect(
+            voicing.frets.slice(1).every((fret) => fret !== null),
+            context,
+          ).toBe(true);
+          const bass = GUITAR_TUNING[1] + voicing.rootFret;
+          expect(
+            voicingNotes(voicing).map((note) => midi(note) - bass),
+            context,
+          ).toEqual([0, 7, 11, 16, 19]);
+          expect(voicingDegrees(voicing, chord.tones), context).toEqual([
+            '×',
+            'R',
+            '5',
+            '7',
+            '3',
+            '5',
+          ]);
+          expect(voicing.fingers[5], context).toBe(voicing.rootFret ? 1 : 0);
+          expect(voicing.barre, context).toEqual(
+            voicing.rootFret ? { fret: voicing.rootFret, from: 1, to: 5, finger: 1 } : undefined,
+          );
+        }
+      }
+    }
+  });
   it('includes Em on both strings and at both open E and the twelfth fret', () => {
     const em = chordsInKey('G')[5];
     expect(voicingsFor(em).map((v) => [v.rootString, v.rootFret])).toEqual([

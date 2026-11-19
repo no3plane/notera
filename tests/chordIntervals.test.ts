@@ -56,6 +56,14 @@ describe('chord interval material', () => {
     expect(seventh[0].symbol).toBe('E7');
     expect(seventh[0].answers).toEqual(['R', '5', 'b7', '3', '5', 'R']);
     expect(seventh[2].answers).toEqual(['R', '5', '7', '3', '5', 'R']);
+    expect(seventh.find((q) => q.symbol === 'Amaj7')!.answers).toEqual([
+      null,
+      'R',
+      '5',
+      '7',
+      '3',
+      '5',
+    ]);
     expect(seventh.some((q) => q.answers.includes('b5'))).toBe(true);
     const suspended = chordIntervalQuestions('sus');
     expect(suspended[0].symbol).toBe('Esus2');
