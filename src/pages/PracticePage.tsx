@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { ExerciseQuestion } from '../components/ExerciseQuestion';
 import { FretboardPractice } from '../components/FretboardPractice';
@@ -32,6 +32,7 @@ import {
   modesForTopic,
   TOPICS,
   CONNECTION_MODES,
+  TRANSCRIPTION_MODE,
 } from '../lib/exercises';
 import type { Mode } from '../lib/exercises';
 import { kindStats } from '../lib/practice';
@@ -48,6 +49,8 @@ import { NOTE_FORMATS } from '../lib/notation';
 import type { PracticeController } from '../hooks/usePractice';
 import type { Level, Note, NoteFormat } from '../lib/types';
 
+const ChordTranscription = lazy(() => import('../features/chordTranscription/ChordTranscription'));
+
 interface PracticePageProps {
   controller: PracticeController;
   play: (notes: Note[]) => Promise<void>;
@@ -61,8 +64,10 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
   const mode = state.mode ?? 'interval';
   const guitar = isGuitarChordMode(mode);
   const connection = isConnectionMode(mode);
-  const interactive = guitar || connection;
+  const transcription = mode === TRANSCRIPTION_MODE;
+  const interactive = guitar || connection || transcription;
   const family = chordFamilyForMode(mode);
+  const chordWorkspace = Boolean(family);
   const [preferredFamily, setPreferredFamily] = useState(() => family ?? readChordFamily());
   const [chordTask, setChordTask] = useState(() => readChordTask(mode));
   const [overview, setOverview] = useState(true);
@@ -113,6 +118,8 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
     if (family) {
       setPreferredFamily(family);
       saveChordFamily(family);
+    }
+    if (chordWorkspace) {
       try {
         localStorage.setItem(CHORD_NAVIGATION_KEY, JSON.stringify({ mode, task: chordTask }));
       } catch {
@@ -120,10 +127,10 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       }
     }
     const url = new URL(location.href);
-    if (family) url.searchParams.set('task', chordTask);
+    if (chordWorkspace) url.searchParams.set('task', chordTask);
     else url.searchParams.delete('task');
     history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-  }, [mode, family, chordTask]);
+  }, [mode, family, chordWorkspace, chordTask]);
   const board = useRef<HTMLElement>(null);
   const mistakeCount =
     (mode === 'interval' ? progress.mistakes.length : 0) +
@@ -205,9 +212,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
       <div className="practice-heading">
         <h1>{topic.label}</h1>
         <p>
-          {family
-            ? '认和弦、练按弦、换和弦，选一项直接开始。'
-            : '选你今天想练的，每项都可以独立开始。'}
+          {transcription
+            ? MODE_DESCRIPTIONS[mode]
+            : chordWorkspace
+              ? '认和弦、练按弦、换和弦。'
+              : '选你今天想练的，每项都可以独立开始。'}
         </p>
       </div>
       <div className="topic-tabs" role="group" aria-label="练习专题">
@@ -227,10 +236,10 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
           </button>
         ))}
       </div>
-      <div className={family ? 'chord-practice-shell' : undefined}>
-        {family && <ChordTaskNavigation task={chordTask} onChange={changeTask} />}
-        <div className={family ? 'chord-workspace' : undefined}>
-          {family && (
+      <div className={chordWorkspace ? 'chord-practice-shell' : undefined}>
+        {chordWorkspace && <ChordTaskNavigation task={chordTask} onChange={changeTask} />}
+        <div className={chordWorkspace ? 'chord-workspace' : undefined}>
+          {chordWorkspace && (
             <h2 className="chord-workspace-heading">
               {
                 CHORD_TASK_GROUPS.flatMap((group) => [...group.tasks]).find(
@@ -270,7 +279,11 @@ export function PracticePage({ controller, play, format, onFormat }: PracticePag
               </div>
             </PracticeModeToolbar>
           )}
-          {guitar && chordTask === 'intervals' ? (
+          {transcription ? (
+            <Suspense fallback={<p role="status">正在打开扒歌…</p>}>
+              <ChordTranscription />
+            </Suspense>
+          ) : guitar && chordTask === 'intervals' ? (
             <ChordIntervalPractice key={family} family={family} familySwitch={familySwitch} />
           ) : connection ? (
             <ChordConnectionPractice

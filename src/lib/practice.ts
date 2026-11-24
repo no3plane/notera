@@ -10,6 +10,7 @@ import {
   isConnectionMode,
   shuffle,
   takeExercise,
+  TRANSCRIPTION_MODE,
 } from './exercises';
 import type { Exercise, ExerciseKind, Mode } from './exercises';
 import { MAJOR_KEYS } from './chordHarmony';
@@ -122,8 +123,13 @@ export function createSession(
   progress: Pick<Progress, 'exerciseHistory' | 'byKind'> = {},
 ): Session {
   let queue: Question[];
-  if (mode === 'fretboard' || isGuitarChordMode(mode) || isConnectionMode(mode)) {
-    queue = []; // Interactive guitar modes own their sessions and records.
+  if (
+    mode === 'fretboard' ||
+    mode === TRANSCRIPTION_MODE ||
+    isGuitarChordMode(mode) ||
+    isConnectionMode(mode)
+  ) {
+    queue = []; // Interactive modes own their sessions and records.
   } else if (mode === DIATONIC_SUS_MODE) {
     queue = diatonicSusQueue(level, exerciseMistakes, progress);
   } else if (level === 'review') {

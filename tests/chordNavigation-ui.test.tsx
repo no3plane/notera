@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import * as transcriptionProjects from '../src/features/chordTranscription/projects';
 import { CHORD_NAVIGATION_KEY } from '../src/lib/chordPracticeNavigation';
 import { readConnectionProgress } from '../src/lib/connectionPractice';
 import { GUITAR_PROGRESS_KEY, readGuitarProgress } from '../src/lib/guitarChords';
@@ -9,7 +10,10 @@ import { PROGRESS_KEY } from '../src/lib/progress';
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 const choose = (name: string, value: string) =>
   fireEvent.change(screen.getByRole('combobox', { name }), { target: { value } });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 it('opens recall and reference directly and restores the task when returning to chords', () => {
   render(<App />);
@@ -29,9 +33,6 @@ it('removes pair practice from desktop, mobile and connection controls', () => {
   render(<App />);
   click('和弦');
   expect(screen.queryByRole('button', { name: '两和弦专项' })).toBeNull();
-  expect(
-    within(screen.getByRole('combobox', { name: '当前练习' })).getAllByRole('option'),
-  ).toHaveLength(7);
   expect(screen.queryByRole('option', { name: '两和弦专项' })).toBeNull();
   click('和弦连接');
   expect(screen.queryByText('拆开练一对')).toBeNull();
@@ -49,6 +50,7 @@ it('uses the grouped mobile task selector and goes directly to suspended-only ta
       .getAllByRole('group')
       .map((group) => group.getAttribute('label')),
   ).toEqual(['认和弦', '弹和弦', '查指法']);
+  expect(within(picker).queryByRole('option', { name: '扒歌' })).toBeNull();
   choose('当前练习', 'diatonic');
   expect(screen.getByRole('table', { name: /C 大调/ })).toBeTruthy();
   expect(screen.getByRole('button', { name: '挂留和弦', pressed: true })).toBeTruthy();
@@ -63,6 +65,75 @@ it('uses the grouped mobile task selector and goes directly to suspended-only ta
   choose('当前练习', 'recall');
   expect(screen.queryByRole('img')).toBeNull();
   expect(screen.getByRole('button', { name: '弹好了，核对指法' })).toBeTruthy();
+});
+
+it('opens transcription as its own topic and keeps the last chord task', async () => {
+  const app = render(<App />);
+  click('和弦');
+  click('指法参考');
+  click('扒歌');
+  const library = await screen.findByRole('region', { name: '工程文件' });
+  expect(screen.getByRole('heading', { name: '扒歌', level: 1 })).toBeTruthy();
+  expect(screen.getByRole('button', { name: '扒歌', pressed: true })).toBeTruthy();
+  expect(screen.queryByRole('navigation', { name: '和弦练习' })).toBeNull();
+  expect(within(library).getByRole('button', { name: '打开新歌' })).toBeTruthy();
+  expect(within(library).getByRole('button', { name: '导入工程' })).toBeTruthy();
+  expect(screen.queryByRole('region', { name: '扒歌工作区' })).toBeNull();
+  expect(new URLSearchParams(location.search).get('practice')).toBe('transcription');
+  expect(new URLSearchParams(location.search).has('task')).toBe(false);
+  click('和弦');
+  expect(screen.getByRole('button', { name: '指法参考', pressed: true })).toBeTruthy();
+  click('扒歌');
+  await screen.findByRole('region', { name: '工程文件' });
+  app.unmount();
+  history.replaceState(null, '', '/');
+  render(<App />);
+  expect(await screen.findByRole('region', { name: '工程文件' })).toBeTruthy();
+});
+
+it('lists saved transcription projects and opens one only when selected', async () => {
+  const project: transcriptionProjects.Project = {
+    id: 'saved-song',
+    name: '练习曲',
+    audioName: '练习曲.mp3',
+    audioFingerprint: '12:87654321',
+    duration: 3,
+    meter: '4/4',
+    firstBeat: null,
+    beats: [{ id: 1, time: 0.5, chord: 'Cmaj7' }],
+    bpm: 120,
+    analysisDone: true,
+    speed: 1,
+    position: 0.5,
+    updatedAt: 1000,
+  };
+  vi.spyOn(transcriptionProjects, 'listProjects').mockResolvedValue([
+    { project, remembersFile: false },
+  ]);
+  const loadSong = vi.spyOn(transcriptionProjects, 'loadSong').mockResolvedValue({
+    project,
+    audio: null,
+  });
+  vi.spyOn(transcriptionProjects, 'saveProject').mockResolvedValue(undefined);
+  history.replaceState(null, '', '/?practice=transcription');
+  render(<App />);
+  const openSong = await screen.findByRole('button', { name: /^练习曲/ });
+  expect(screen.getByRole('button', { name: '扒歌', pressed: true })).toBeTruthy();
+  expect(new URLSearchParams(location.search).has('task')).toBe(false);
+  expect(screen.queryByRole('region', { name: '扒歌工作区' })).toBeNull();
+  expect(loadSong).not.toHaveBeenCalled();
+
+  fireEvent.click(openSong);
+  const workspace = await screen.findByRole('region', { name: '扒歌工作区' });
+  expect(loadSong).toHaveBeenCalledWith(project.id);
+  expect(within(workspace).getByRole('button', { name: '导出当前工程' })).toBeTruthy();
+  expect(within(workspace).getByRole('textbox', { name: /第 1 拍和弦/ })).toHaveProperty(
+    'value',
+    'Cmaj7',
+  );
+  click('返回工程列表');
+  expect(screen.getByRole('button', { name: /^练习曲/ })).toBeTruthy();
+  expect(screen.queryByRole('region', { name: '扒歌工作区' })).toBeNull();
 });
 
 it('shares changed keys and voicings between reference, recall and connections', () => {

@@ -28,6 +28,7 @@ export const CONNECTION_MODES = {
   seventh: 'seventh-connection',
   sus: 'sus-connection',
 } as const;
+export const TRANSCRIPTION_MODE = 'transcription';
 
 export const KINDS = [
   'interval',
@@ -40,7 +41,7 @@ export const KINDS = [
 export type ExerciseKind = (typeof KINDS)[number];
 export type GuitarChordMode = (typeof GUITAR_CHORD_MODES)[PracticeChordFamily];
 export type ConnectionMode = (typeof CONNECTION_MODES)[PracticeChordFamily];
-export type Mode = ExerciseKind | GuitarChordMode | ConnectionMode;
+export type Mode = ExerciseKind | GuitarChordMode | ConnectionMode | typeof TRANSCRIPTION_MODE;
 export const isConnectionMode = (mode: Mode): mode is ConnectionMode =>
   Object.values(CONNECTION_MODES).some((value) => value === mode);
 export const isGuitarChordMode = (mode: Mode): mode is GuitarChordMode =>
@@ -78,11 +79,12 @@ export const KIND_LABELS: Record<Mode, string> = {
   'chord-connection': '常见进行',
   'seventh-connection': '常见进行',
   'sus-connection': '和弦连接',
+  [TRANSCRIPTION_MODE]: '扒歌',
 };
 type Topic = { label: string } & (
   { modes: readonly Mode[] } | { chordModes: Record<PracticeChordFamily, readonly Mode[]> }
 );
-export const modesForTopic = (topic: Topic, family: PracticeChordFamily) =>
+export const modesForTopic = (topic: Topic, family: PracticeChordFamily): readonly Mode[] =>
   'chordModes' in topic ? topic.chordModes[family] : topic.modes;
 export const TOPICS: Topic[] = [
   { label: '音程', modes: ['interval', 'build-note'] },
@@ -95,6 +97,7 @@ export const TOPICS: Topic[] = [
       sus: [...CHORD_MODES.sus, GUITAR_CHORD_MODES.sus],
     },
   },
+  { label: KIND_LABELS[TRANSCRIPTION_MODE], modes: [TRANSCRIPTION_MODE] },
 ];
 export const MODE_LABELS = KIND_LABELS;
 export const MODE_DESCRIPTIONS: Record<Mode, string> = {
@@ -114,6 +117,7 @@ export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'chord-connection': '选一个进行，跟随节拍练习连续换指。',
   'seventh-connection': '选一个七和弦进行，练习连续换指与落拍。',
   'sus-connection': '在和弦连接中加入挂留变化。',
+  [TRANSCRIPTION_MODE]: '导入歌曲，按拍听写和弦。',
 };
 export interface Exercise {
   id: string;

@@ -1,4 +1,4 @@
-import { CONNECTION_MODES, GUITAR_CHORD_MODES, KINDS } from './exercises';
+import { CONNECTION_MODES, GUITAR_CHORD_MODES, KINDS, TRANSCRIPTION_MODE } from './exercises';
 import type { Mode } from './exercises';
 
 export const LAST_PRACTICE_KEY = 'notera.last-practice.v1';
@@ -6,6 +6,7 @@ const modes: readonly string[] = [
   ...KINDS,
   ...Object.values(GUITAR_CHORD_MODES),
   ...Object.values(CONNECTION_MODES),
+  TRANSCRIPTION_MODE,
 ];
 export const isPracticeMode = (value: unknown): value is Mode =>
   typeof value === 'string' && modes.includes(value);

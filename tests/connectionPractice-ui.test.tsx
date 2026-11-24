@@ -32,7 +32,7 @@ describe('independent connection practice', () => {
       within(screen.getByRole('group', { name: '练习专题' }))
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['音程', '指板', '和弦']);
+    ).toEqual(['音程', '指板', '和弦', '扒歌']);
     click('和弦');
     click('和弦连接');
     expect(screen.getByLabelText('本轮进行').textContent).toBe('C → G → Am → F');
