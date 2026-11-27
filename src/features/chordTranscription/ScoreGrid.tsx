@@ -62,17 +62,11 @@ export const ScoreGrid = memo(function ScoreGrid({
     }
     let measure = measureIndex;
     let column = index;
-    if (event.key === 'ArrowRight' || event.key === 'Enter') {
+    if (event.key === 'Enter') {
       column++;
       if (column === measures[measure].beats.length) {
         measure++;
         column = 0;
-      }
-    } else if (event.key === 'ArrowLeft') {
-      column--;
-      if (column < 0) {
-        measure--;
-        column = (measures[measure]?.beats.length ?? 1) - 1;
       }
     } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
       const columns = grid.current

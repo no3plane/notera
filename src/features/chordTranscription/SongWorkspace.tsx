@@ -530,7 +530,7 @@ export function SongWorkspace({
         )}
         {measures.length > 0 && !halfDraft && (
           <p className="transcription-keys">
-            方向键换格 · Enter 下一拍 · Delete 清空{available && ' · 空格播放 / 暂停'}
+            ↑ / ↓ 换格 · Enter 下一拍 · Delete 清空{available && ' · 空格播放 / 暂停'}
           </p>
         )}
       </section>

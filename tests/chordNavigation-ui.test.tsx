@@ -100,7 +100,10 @@ it('lists saved transcription projects and opens one only when selected', async 
     duration: 3,
     meter: '4/4',
     firstBeat: null,
-    beats: [{ id: 1, time: 0.5, chord: 'Cmaj7' }],
+    beats: [
+      { id: 1, time: 0.5, chord: 'Cmaj7' },
+      { id: 2, time: 1, chord: 'iiø7' },
+    ],
     bpm: 120,
     analysisDone: true,
     speed: 1,
@@ -127,10 +130,16 @@ it('lists saved transcription projects and opens one only when selected', async 
   const workspace = await screen.findByRole('region', { name: '扒歌工作区' });
   expect(loadSong).toHaveBeenCalledWith(project.id);
   expect(within(workspace).getByRole('button', { name: '导出当前工程' })).toBeTruthy();
-  expect(within(workspace).getByRole('textbox', { name: /第 1 拍和弦/ })).toHaveProperty(
-    'value',
-    'Cmaj7',
-  );
+  const firstBeat = within(workspace).getByRole('textbox', { name: /第 1 拍和弦/ });
+  const secondBeat = within(workspace).getByRole('textbox', { name: /第 2 拍和弦/ });
+  expect(firstBeat).toHaveProperty('value', 'Cmaj7');
+  act(() => firstBeat.focus());
+  expect(fireEvent.keyDown(firstBeat, { key: 'ArrowRight' })).toBe(true);
+  expect(document.activeElement).toBe(firstBeat);
+  fireEvent.keyDown(firstBeat, { key: 'Enter' });
+  expect(document.activeElement).toBe(secondBeat);
+  expect(fireEvent.keyDown(secondBeat, { key: 'ArrowLeft' })).toBe(true);
+  expect(document.activeElement).toBe(secondBeat);
   click('返回工程列表');
   expect(screen.getByRole('button', { name: /^练习曲/ })).toBeTruthy();
   expect(screen.queryByRole('region', { name: '扒歌工作区' })).toBeNull();
